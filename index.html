@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1.0">
+<title>🍺 后宫德州扑克</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:linear-gradient(135deg,#3d1a1a 0%,#1a0808 50%,#3d1a1a 100%);background-attachment:fixed;font-family:'PingFang SC','Noto Serif SC','Songti SC',serif;color:#f5e6c8;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 0%,rgba(0,0,0,.5) 100%);pointer-events:none;z-index:0}
+.screen{display:none;position:relative;z-index:1}
+.screen.active{display:flex;flex-direction:column;align-items:center}
+
+/* ── COMMON ── */
+.title{font-size:2.4em;font-weight:900;color:#f0c040;text-shadow:0 0 24px rgba(240,192,64,.6),2px 2px 4px rgba(0,0,0,.9);text-align:center;letter-spacing:6px;font-family:'Noto Serif SC',serif}
+.subtitle{opacity:.7;margin-bottom:18px;text-align:center;font-size:.95em;letter-spacing:2px}
+.card-box{width:100%;max-width:460px;background:linear-gradient(135deg,rgba(20,10,5,.85),rgba(40,20,10,.85));border:1px solid rgba(240,192,64,.3);border-radius:14px;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,.5),inset 0 1px 0 rgba(240,192,64,.1)}
+.card-box.wide{max-width:680px}
+.form-group{margin-bottom:14px}
+.form-group>label{display:block;font-size:.85em;opacity:.75;margin-bottom:6px;letter-spacing:1px}
+input[type=text],input[type=number]{width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(240,192,64,.25);background:rgba(0,0,0,.4);color:#f5e6c8;font-size:1em;font-family:inherit}
+input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,64,.2)}
+.btn{padding:11px 22px;border-radius:8px;border:none;cursor:pointer;font-size:.96em;font-weight:600;transition:all .15s;font-family:inherit;user-select:none}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-gold{background:linear-gradient(135deg,#f0c040,#d4a020);color:#3d1a1a;box-shadow:0 4px 12px rgba(240,192,64,.3)}
+.btn-red{background:#c0392b;color:#fff}
+.btn-green{background:#27ae60;color:#fff}
+.btn-blue{background:#3498db;color:#fff}
+.btn-ghost{background:transparent;border:1px solid rgba(240,192,64,.4);color:#f5e6c8}
+.btn-lg{padding:13px 28px;font-size:1.05em;width:100%}
+
+/* ── ENTRY ── */
+#screen-entry{padding:30px 16px;min-height:100vh;justify-content:center}
+.entry-tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{flex:1;padding:9px;text-align:center;cursor:pointer;border-radius:8px;border:1px solid rgba(240,192,64,.2);background:rgba(0,0,0,.3);transition:.15s}
+.tab.active{background:rgba(240,192,64,.15);border-color:#f0c040}
+.tab:hover{background:rgba(240,192,64,.1)}
+
+/* ── AVATAR ── */
+.avatar{display:inline-block;border-radius:50%;overflow:hidden;background:#000;flex-shrink:0;border:2px solid rgba(240,192,64,.3)}
+.avatar svg{display:block;width:100%;height:100%}
+.avatar-sm{width:36px;height:36px}
+.avatar-md{width:56px;height:56px}
+.avatar-lg{width:90px;height:90px;border-width:3px}
+.avatar-xl{width:120px;height:120px;border-width:3px}
+
+.avatar-pick{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
+.avatar-name{font-size:1.3em;color:#f0c040;font-weight:700;text-align:center}
+.avatar-sub{font-size:.85em;opacity:.65;margin-top:-3px;text-align:center}
+.avatar-reroll{display:flex;gap:8px;justify-content:center;margin-top:4px}
+
+/* ── LOBBY ── */
+#screen-lobby{padding:24px 16px;min-height:100vh;justify-content:flex-start}
+.share-box{background:rgba(0,0,0,.5);padding:12px;border-radius:10px;margin-bottom:14px;border:1px solid rgba(240,192,64,.2)}
+.share-box label{font-size:.8em;opacity:.7;display:block;margin-bottom:6px}
+.share-url-row{display:flex;gap:6px}
+.share-url-row input{flex:1;font-size:.82em;padding:8px;font-family:monospace}
+.share-url-row button{padding:8px 12px;font-size:.85em;white-space:nowrap}
+.lobby-players{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.lobby-p{display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,.35);padding:10px;border-radius:10px;border:1px solid rgba(240,192,64,.15);position:relative}
+.lobby-p .host-badge{position:absolute;top:-6px;right:-6px;background:#f0c040;color:#3d1a1a;font-size:.7em;padding:1px 7px;border-radius:8px;font-weight:700}
+.lobby-p .lp-name{font-size:.95em;font-weight:700;color:#f5e6c8;margin-top:6px;text-align:center}
+.lobby-p .lp-sub{font-size:.72em;opacity:.6;margin-top:-2px}
+.lobby-empty{text-align:center;padding:24px;opacity:.5;font-size:.9em;grid-column:1/-1}
+
+.waiting{text-align:center;padding:20px;opacity:.7}
+.waiting .dots{display:inline-block;width:20px;text-align:left}
+
+/* ── GAME ── */
+#screen-game{padding:10px 8px;min-height:100vh;justify-content:flex-start;width:100%}
+.game-hdr{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:760px;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.hand-lbl{font-size:.82em;opacity:.7;color:#f0c040}
+.pot-lbl{background:linear-gradient(135deg,rgba(240,192,64,.25),rgba(212,160,32,.15));padding:6px 16px;border-radius:18px;font-size:1.05em;font-weight:700;color:#f0c040;border:1px solid rgba(240,192,64,.4)}
+.phase-lbl{font-size:.82em;color:#f0c040}
+.phase-dots{display:flex;gap:5px;margin-bottom:8px;justify-content:center}
+.pd{width:7px;height:7px;border-radius:50%;background:rgba(245,230,200,.18);transition:.3s}
+.pd.done{background:rgba(245,230,200,.5)}
+.pd.now{background:#f0c040;box-shadow:0 0 6px #f0c040}
+
+/* Community */
+.community-wrap{background:linear-gradient(180deg,rgba(60,30,15,.5),rgba(30,15,8,.6));border:1px solid rgba(240,192,64,.2);border-radius:14px;padding:14px;width:100%;max-width:760px;margin-bottom:8px}
+.com-lbl{font-size:.72em;opacity:.55;text-align:center;margin-bottom:8px;letter-spacing:2px;color:#f0c040}
+.com-cards{display:flex;gap:7px;justify-content:center}
+
+/* Players grid */
+.players-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;width:100%;max-width:760px;margin-bottom:8px}
+.pp{background:linear-gradient(135deg,rgba(20,10,5,.7),rgba(40,20,10,.7));border-radius:12px;padding:10px;border:2px solid transparent;transition:.2s;position:relative}
+.pp.me{border-color:rgba(240,192,64,.35);box-shadow:0 0 8px rgba(240,192,64,.15)}
+.pp.cur{border-color:#f0c040;box-shadow:0 0 14px rgba(240,192,64,.5)}
+.pp.fold{opacity:.4}
+.pp.disc{opacity:.3;filter:grayscale(.7)}
+.pp.win{border-color:#27ae60;background:linear-gradient(135deg,rgba(39,174,96,.2),rgba(40,20,10,.7));box-shadow:0 0 14px rgba(39,174,96,.4)}
+.pp-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pp-info{flex:1;min-width:0}
+.pp-name{font-weight:700;font-size:.95em;color:#f5e6c8;display:flex;align-items:center;gap:4px;line-height:1.2}
+.pp-name .badge{font-size:.62em;background:rgba(240,192,64,.25);color:#f0c040;padding:1px 5px;border-radius:9px;font-weight:400}
+.pp-name .me-tag{font-size:.62em;background:#f0c040;color:#3d1a1a;padding:1px 5px;border-radius:9px;font-weight:700}
+.pp-char{font-size:.7em;opacity:.6;color:#f5e6c8}
+.pp-chips{color:#f0c040;font-size:.92em;font-weight:700;text-align:right}
+.pp-cards{display:flex;gap:4px;margin:5px 0}
+.pp-bet{font-size:.75em;opacity:.65}
+.pp-bet b{color:#f0c040}
+.pp-status{font-size:.7em;padding:1px 7px;border-radius:9px;background:rgba(245,230,200,.1);display:inline-block;margin-top:3px}
+.pp-status.allin{background:rgba(231,76,60,.3);color:#ff8a7a}
+.pp-drinks{font-size:.72em;opacity:.55;margin-top:2px}
+
+/* Action area */
+.action-wrap{background:linear-gradient(135deg,rgba(20,10,5,.85),rgba(40,20,10,.85));border:1px solid rgba(240,192,64,.25);border-radius:14px;padding:14px;width:100%;max-width:760px}
+.act-title{text-align:center;font-size:.9em;opacity:.8;margin-bottom:10px}
+.act-title strong{color:#f0c040;font-size:1.15em}
+.act-mycards{display:flex;gap:7px;justify-content:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(240,192,64,.15)}
+.act-btns{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.raise-row{display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap}
+.raise-row input{width:100px;padding:7px;text-align:center}
+
+/* Cards */
+.card{width:50px;height:70px;border-radius:6px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;box-shadow:2px 3px 8px rgba(0,0,0,.5);border:1px solid #ccc;flex-shrink:0;position:relative}
+.card .cr{font-size:1em;line-height:1}
+.card .cs{font-size:1.2em;line-height:1}
+.card.red{color:#c0392b}
+.card.blk{color:#1a1a1a}
+.card.down{background:linear-gradient(135deg,#7a1a2a,#3a0a15);border:1px solid #5a0a1a;display:flex;align-items:center;justify-content:center}
+.card.down::after{content:'';display:block;width:28px;height:40px;border:1.5px solid rgba(240,192,64,.3);border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(240,192,64,.15) 3px,rgba(240,192,64,.15) 4px)}
+.card-ph{width:50px;height:70px;border-radius:6px;border:2px dashed rgba(245,230,200,.15)}
+.card.big{width:66px;height:92px}
+.card.big .cr{font-size:1.2em}
+.card.big .cs{font-size:1.5em}
+
+/* ── DRINK ── */
+#screen-drink{min-height:100vh;justify-content:center;padding:16px}
+.drink-box{background:linear-gradient(135deg,rgba(40,20,10,.92),rgba(20,10,5,.92));border:1px solid rgba(240,192,64,.3);border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.drink-title{font-size:1.8em;color:#f0c040;text-align:center;margin-bottom:12px;font-weight:700;letter-spacing:3px}
+.special-box{text-align:center;padding:11px;background:linear-gradient(135deg,rgba(155,89,182,.4),rgba(108,52,131,.3));border-radius:10px;border:1px solid rgba(155,89,182,.5);margin-bottom:12px;font-size:1.05em}
+.win-box{background:linear-gradient(135deg,rgba(39,174,96,.18),rgba(20,80,50,.15));border-radius:11px;border:1px solid rgba(39,174,96,.4);padding:14px;text-align:center;margin-bottom:12px;display:flex;align-items:center;gap:12px;justify-content:center}
+.win-box .wname{font-size:1.3em;color:#5dde88;font-weight:700;line-height:1.2}
+.win-box .whand{color:#f0c040;font-size:1em}
+.win-box .wgain{color:#f0c040;margin-top:2px;font-size:.9em}
+.drink-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;max-height:280px;overflow-y:auto}
+.di{display:flex;align-items:center;gap:10px;background:rgba(192,57,43,.18);border-radius:9px;padding:9px 12px;border:1px solid rgba(192,57,43,.3)}
+.di-name{flex:1;font-weight:700;font-size:.95em}
+.di-amt{font-size:1.3em;color:#ff6b5b;font-weight:700}
+.lb{background:rgba(0,0,0,.3);border-radius:9px;padding:10px 14px;margin-bottom:14px}
+.lb h3{font-size:.82em;opacity:.6;margin-bottom:8px;color:#f0c040;letter-spacing:1px}
+.lb-row{display:flex;align-items:center;padding:4px 0;font-size:.88em;border-bottom:1px solid rgba(240,192,64,.05);gap:8px}
+.lb-rank{width:22px;opacity:.55;text-align:center}
+.lb-n{flex:1;display:flex;align-items:center;gap:6px}
+.lb-c{color:#f0c040}
+.lb-d{color:#ff6b5b;font-size:.82em}
+
+/* ── MSG ── */
+#msg{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.88);color:#f5e6c8;padding:9px 20px;border-radius:18px;font-size:.92em;z-index:999;pointer-events:none;opacity:0;transition:.3s;white-space:nowrap;border:1px solid rgba(240,192,64,.3);max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#msg.show{opacity:1}
+
+/* Toast for non-blocking errors */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(192,57,43,.95);color:#fff;padding:10px 18px;border-radius:10px;font-size:.9em;z-index:999;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1}
+
+@media(max-width:480px){
+  .title{font-size:1.9em;letter-spacing:3px}
+  .players-grid{grid-template-columns:1fr}
+  .lobby-players{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+  .card{width:42px;height:58px}
+  .card .cr{font-size:.85em}
+  .card .cs{font-size:1em}
+  .card-ph{width:42px;height:58px}
+  .card.big{width:54px;height:76px}
+}
+</style>
+</head>
+<body>
+<div id="msg"></div>
+<div id="toast"></div>
+
+<!-- ENTRY -->
+<div class="screen active" id="screen-entry">
+  <div class="title">🏯 后宫德州</div>
+  <div class="subtitle">— 喝酒局 · 联机版 —</div>
+  <div class="card-box">
+    <div class="entry-tabs">
+      <div class="tab active" id="tab-host" onclick="switchTab('host')">🎴 创建房间</div>
+      <div class="tab" id="tab-join" onclick="switchTab('join')">🚪 加入房间</div>
+    </div>
+
+    <div class="form-group">
+      <label>您的名字</label>
+      <input type="text" id="my-name" maxlength="10" placeholder="如：朕、本宫、奴婢...">
+    </div>
+
+    <div class="form-group">
+      <label>您的形象（点击重新抽取）</label>
+      <div class="avatar-pick">
+        <div class="avatar avatar-xl" id="my-avatar-svg" onclick="rerollAvatar()" style="cursor:pointer"></div>
+        <div class="avatar-name" id="my-avatar-name"></div>
+        <div class="avatar-sub" id="my-avatar-sub"></div>
+        <button class="btn btn-ghost" style="padding:6px 14px;font-size:.85em" onclick="rerollAvatar()">🎲 换一个</button>
+      </div>
+    </div>
+
+    <div id="tab-host-panel">
+      <div class="form-group">
+        <label>游戏设置（房主）</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <label style="opacity:.75;font-size:.85em">起始筹码</label>
+          <input type="number" id="s-chips" value="100" min="20" max="1000" step="10" style="width:80px">
+          <label style="opacity:.75;font-size:.85em">大盲</label>
+          <input type="number" id="s-bb" value="10" min="2" max="50" step="2" style="width:70px">
+        </div>
+      </div>
+      <button class="btn btn-gold btn-lg" onclick="hostStart()">🎴 创建房间</button>
+    </div>
+
+    <div id="tab-join-panel" style="display:none">
+      <div class="form-group">
+        <label>房间码（房主分享给您）</label>
+        <input type="text" id="join-code" placeholder="输入房间码或粘贴邀请链接">
+      </div>
+      <button class="btn btn-gold btn-lg" onclick="clientJoin()">🚪 加入房间</button>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;font-size:.8em;opacity:.55;text-align:center;max-width:460px;padding:0 16px;line-height:1.6">
+    💡 房主创建房间后，分享链接给好友即可加入。<br>
+    游戏过程中房主需要保持页面打开。
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen" id="screen-lobby">
+  <div class="title">🏯 候场殿</div>
+  <div class="subtitle">— 等待入局 —</div>
+  <div class="card-box wide">
+    <div class="share-box" id="share-box" style="display:none">
+      <label>📨 邀请链接（复制后分享给好友）</label>
+      <div class="share-url-row">
+        <input type="text" id="share-url" readonly>
+        <button class="btn btn-gold" onclick="copyShare()">复制</button>
+      </div>
+      <div style="margin-top:6px;font-size:.78em;opacity:.6">房间码：<span id="share-code" style="font-family:monospace;color:#f0c040"></span></div>
+    </div>
+
+    <div class="form-group">
+      <label>本局玩家 (<span id="lobby-count">0</span>/8)</label>
+      <div class="lobby-players" id="lobby-players"></div>
+    </div>
+
+    <div id="lobby-host-btns" style="display:none">
+      <button class="btn btn-gold btn-lg" onclick="hostStartGame()" id="start-game-btn">▶ 开始游戏（至少2人）</button>
+    </div>
+    <div id="lobby-wait" class="waiting" style="display:none">
+      等待房主开始游戏<span class="dots">.</span>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="screen-game">
+  <div class="game-hdr">
+    <div class="hand-lbl" id="g-hand">第 1 局</div>
+    <div class="pot-lbl">底池 <span id="g-pot">0</span></div>
+    <div class="phase-lbl" id="g-phase">发牌</div>
+  </div>
+  <div class="phase-dots">
+    <div class="pd" id="pd0"></div>
+    <div class="pd" id="pd1"></div>
+    <div class="pd" id="pd2"></div>
+    <div class="pd" id="pd3"></div>
+    <div class="pd" id="pd4"></div>
+  </div>
+  <div class="community-wrap">
+    <div class="com-lbl">公 共 牌</div>
+    <div class="com-cards" id="g-com"></div>
+  </div>
+  <div class="players-grid" id="g-players"></div>
+  <div class="action-wrap" id="g-actions">
+    <div class="act-mycards" id="g-mycards"></div>
+    <div class="act-title" id="g-act-title">等待中...</div>
+    <div class="act-btns" id="g-act-btns"></div>
+    <div class="raise-row" id="g-raise" style="display:none">
+      <input type="number" id="raise-val" placeholder="加注到">
+      <button class="btn btn-blue" onclick="actRaise()">确认</button>
+      <button class="btn btn-ghost" onclick="toggleRaise(false)">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRINK -->
+<div class="screen" id="screen-drink">
+  <div class="drink-box">
+    <div class="drink-title">🍶 罚 酒 时 刻</div>
+    <div id="d-special" class="special-box" style="display:none"></div>
+    <div class="win-box" id="d-win"></div>
+    <div class="drink-list" id="d-list"></div>
+    <div class="lb" id="d-lb"></div>
+    <div style="display:flex;gap:8px" id="d-btns"></div>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="screen" id="screen-final">
+  <div class="drink-box" style="text-align:center;max-width:520px">
+    <div class="title" style="margin-bottom:16px">— 散 局 —</div>
+    <div id="f-lb"></div>
+    <button class="btn btn-gold btn-lg" onclick="location.href=location.pathname" style="margin-top:18px">🔄 再开一局</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  CHARACTERS - 甄嬛传角色 SVG
+// ════════════════════════════════════════════════════════════════
+const CHARS=[
+  {id:'huangshang',name:'皇上',sub:'雍正',bg:'#8b6914',robe:'#d4a020',hair:'crownM',acc:'emperor',isM:1,beard:1},
+  {id:'huanghou',name:'皇后',sub:'宜修',bg:'#6b1e1e',robe:'#c0392b',hair:'bun',acc:'phoenix'},
+  {id:'zhenhuan',name:'甄嬛',sub:'熹贵妃',bg:'#3a6a4a',robe:'#88c0a8',hair:'bun',acc:'butterfly'},
+  {id:'huafei',name:'华妃',sub:'年世兰',bg:'#a01e1e',robe:'#e74c3c',hair:'bun',acc:'goldTassel'},
+  {id:'meizhuang',name:'眉庄',sub:'惠妃',bg:'#2a4a7a',robe:'#5d7fb8',hair:'bun',acc:'jade'},
+  {id:'lingrong',name:'安陵容',sub:'鹂妃',bg:'#5a3a6a',robe:'#9a7fb8',hair:'bun',acc:'pearl'},
+  {id:'duanfei',name:'端妃',sub:'齐月宾',bg:'#5a5a6a',robe:'#9a9aaa',hair:'bun',acc:'silver'},
+  {id:'jingfei',name:'敬妃',sub:'冯若昭',bg:'#3a5a4a',robe:'#6a8a7a',hair:'bun',acc:'jadeS'},
+  {id:'guojunwang',name:'果郡王',sub:'允礼',bg:'#3a5a7a',robe:'#5d8fb8',hair:'maleBun',acc:'jadeHat',isM:1},
+  {id:'supeisheng',name:'苏培盛',sub:'总管',bg:'#4a3a2a',robe:'#7a5a3a',hair:'eunuch',acc:'eunuchHat',isE:1},
+  {id:'jinxi',name:'槿汐',sub:'掌事姑姑',bg:'#3a5a5a',robe:'#7aaaa0',hair:'bun',acc:'simpleflower'},
+  {id:'huanbi',name:'浣碧',sub:'婢女',bg:'#7a5a3a',robe:'#d8a878',hair:'doubleRing',acc:'flower'},
+];
+
+function lighten(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.min(255,((c>>16)&255)+255*amt),g=Math.min(255,((c>>8)&255)+255*amt),b=Math.min(255,(c&255)+255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
+function darken(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.max(0,((c>>16)&255)-255*amt),g=Math.max(0,((c>>8)&255)-255*amt),b=Math.max(0,(c&255)-255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
+
+// ── HAIR ──
+function hairBun(){return`<ellipse cx="60" cy="28" rx="20" ry="13" fill="#1a0e08"/><path d="M 38,45 Q 32,60 36,82 L 44,82 Q 41,60 46,46 Z" fill="#1a0e08"/><path d="M 82,45 Q 88,60 84,82 L 76,82 Q 79,60 74,46 Z" fill="#1a0e08"/><path d="M 38,46 Q 60,30 82,46 L 82,42 Q 60,28 38,42 Z" fill="#1a0e08"/>`}
+function hairDoubleRing(){return`<circle cx="32" cy="32" r="10" fill="#1a0e08"/><circle cx="88" cy="32" r="10" fill="#1a0e08"/><path d="M 40,40 Q 60,32 80,40 L 80,48 Q 60,42 40,48 Z" fill="#1a0e08"/><path d="M 40,48 Q 38,60 42,72 L 46,72 Q 43,60 46,48 Z" fill="#1a0e08"/><path d="M 80,48 Q 82,60 78,72 L 74,72 Q 77,60 74,48 Z" fill="#1a0e08"/>`}
+function hairMaleBun(){return`<ellipse cx="60" cy="32" rx="7" ry="9" fill="#1a0e08"/><path d="M 38,45 Q 33,58 38,72 L 44,72 Q 41,58 46,45 Z" fill="#1a0e08"/><path d="M 82,45 Q 87,58 82,72 L 76,72 Q 79,58 74,45 Z" fill="#1a0e08"/><path d="M 38,45 Q 60,35 82,45 L 82,40 Q 60,32 38,40 Z" fill="#1a0e08"/>`}
+function hairEunuch(){return`<path d="M 40,52 Q 35,65 40,78 L 46,78 Q 43,65 47,52 Z" fill="#1a0e08"/><path d="M 80,52 Q 85,65 80,78 L 74,78 Q 77,65 73,52 Z" fill="#1a0e08"/>`}
+function hairCrownM(){return`<path d="M 40,50 Q 35,60 38,72 L 44,72 Q 41,60 45,50 Z" fill="#1a0e08"/><path d="M 80,50 Q 85,60 82,72 L 76,72 Q 79,60 75,50 Z" fill="#1a0e08"/>`}
+
+// ── ACCESSORIES ──
+function accPhoenix(){return`<path d="M 36,42 Q 60,28 84,42 L 84,48 L 36,48 Z" fill="#8b1818"/><path d="M 38,46 L 82,46 L 82,49 L 38,49 Z" fill="#f0c040"/><circle cx="60" cy="34" r="4" fill="#f0c040"/><circle cx="60" cy="33" r="2" fill="#e74c3c"/><circle cx="46" cy="40" r="2.5" fill="#f0c040"/><circle cx="74" cy="40" r="2.5" fill="#f0c040"/><path d="M 53,32 Q 48,22 42,24 Q 47,28 50,34" fill="#f0c040"/><path d="M 67,32 Q 72,22 78,24 Q 73,28 70,34" fill="#f0c040"/><line x1="38" y1="49" x2="34" y2="62" stroke="#fff" stroke-width=".6"/><circle cx="34" cy="63" r="1.8" fill="#fff"/><line x1="82" y1="49" x2="86" y2="62" stroke="#fff" stroke-width=".6"/><circle cx="86" cy="63" r="1.8" fill="#fff"/><line x1="50" y1="49" x2="50" y2="58" stroke="#fff" stroke-width=".5"/><circle cx="50" cy="59" r="1.3" fill="#fff"/><line x1="70" y1="49" x2="70" y2="58" stroke="#fff" stroke-width=".5"/><circle cx="70" cy="59" r="1.3" fill="#fff"/>`}
+function accEmperor(){return`<path d="M 28,40 Q 22,32 32,28 L 40,38 Z" fill="#1a0e08"/><path d="M 92,40 Q 98,32 88,28 L 80,38 Z" fill="#1a0e08"/><rect x="40" y="32" width="40" height="16" rx="2" fill="#1a0e08"/><rect x="40" y="45" width="40" height="3" fill="#f0c040"/><rect x="40" y="32" width="40" height="2.5" fill="#f0c040"/><circle cx="60" cy="28" r="3.5" fill="#e74c3c"/><circle cx="48" cy="40" r="2" fill="#fff"/><circle cx="60" cy="40" r="2.2" fill="#f0c040"/><circle cx="72" cy="40" r="2" fill="#fff"/><line x1="48" y1="42" x2="48" y2="52" stroke="#fff" stroke-width=".5"/><circle cx="48" cy="53" r="1.3" fill="#fff"/><line x1="72" y1="42" x2="72" y2="52" stroke="#fff" stroke-width=".5"/><circle cx="72" cy="53" r="1.3" fill="#fff"/>`}
+function accButterfly(){return`<g transform="translate(35,40) rotate(-20)"><ellipse cx="0" cy="0" rx="4" ry="5" fill="#88c0a8"/><ellipse cx="-3.5" cy="-1" rx="3" ry="3.5" fill="#a8d8c0"/><circle cx="-1" cy="0" r=".8" fill="#1a0e08"/><line x1="-1" y1="-1" x2="-2" y2="-4" stroke="#1a0e08" stroke-width=".4"/></g><circle cx="78" cy="35" r="2" fill="#f0c040"/><line x1="78" y1="37" x2="76" y2="48" stroke="#f0c040" stroke-width=".4"/><circle cx="76" cy="49" r="1" fill="#f0c040"/>`}
+function accGoldTassel(){return`<circle cx="36" cy="36" r="3.5" fill="#f0c040"/><circle cx="36" cy="36" r="2" fill="#e74c3c"/><line x1="34" y1="39" x2="32" y2="55" stroke="#f0c040" stroke-width=".5"/><line x1="36" y1="40" x2="36" y2="58" stroke="#f0c040" stroke-width=".5"/><line x1="38" y1="39" x2="40" y2="55" stroke="#f0c040" stroke-width=".5"/><circle cx="32" cy="56" r="1" fill="#f0c040"/><circle cx="36" cy="59" r="1" fill="#f0c040"/><circle cx="40" cy="56" r="1" fill="#f0c040"/><circle cx="84" cy="36" r="3.5" fill="#f0c040"/><circle cx="84" cy="36" r="2" fill="#e74c3c"/><line x1="82" y1="39" x2="80" y2="55" stroke="#f0c040" stroke-width=".5"/><line x1="84" y1="40" x2="84" y2="58" stroke="#f0c040" stroke-width=".5"/><line x1="86" y1="39" x2="88" y2="55" stroke="#f0c040" stroke-width=".5"/><circle cx="80" cy="56" r="1" fill="#f0c040"/><circle cx="84" cy="59" r="1" fill="#f0c040"/><circle cx="88" cy="56" r="1" fill="#f0c040"/>`}
+function accJade(){return`<ellipse cx="36" cy="34" rx="3" ry="4.5" fill="#3a8a6a"/><ellipse cx="36" cy="34" rx="1.8" ry="3" fill="#7aceb0"/><line x1="36" y1="38" x2="36" y2="50" stroke="#7aceb0" stroke-width=".6"/><ellipse cx="84" cy="34" rx="3" ry="4.5" fill="#3a8a6a"/><ellipse cx="84" cy="34" rx="1.8" ry="3" fill="#7aceb0"/>`}
+function accJadeS(){return`<rect x="56" y="28" width="8" height="3" rx="1" fill="#3a8a6a"/><circle cx="50" cy="38" r="2" fill="#3a8a6a"/><circle cx="50" cy="38" r="1.2" fill="#7aceb0"/><circle cx="70" cy="38" r="2" fill="#3a8a6a"/><circle cx="70" cy="38" r="1.2" fill="#7aceb0"/>`}
+function accPearl(){return`<circle cx="36" cy="32" r="2.2" fill="#fff"/><circle cx="32" cy="38" r="1.8" fill="#fff"/><circle cx="40" cy="38" r="1.8" fill="#fff"/><circle cx="36" cy="42" r="1.5" fill="#fff"/><circle cx="84" cy="32" r="2.2" fill="#fff"/><circle cx="80" cy="38" r="1.8" fill="#fff"/><circle cx="88" cy="38" r="1.8" fill="#fff"/><circle cx="84" cy="42" r="1.5" fill="#fff"/><circle cx="60" cy="32" r="1.5" fill="#fff"/>`}
+function accSilver(){return`<path d="M 34,32 L 40,38 L 38,40 L 32,34 Z" fill="#d8d8e0"/><circle cx="34" cy="32" r="1.5" fill="#fff"/><path d="M 86,32 L 80,38 L 82,40 L 88,34 Z" fill="#d8d8e0"/><circle cx="86" cy="32" r="1.5" fill="#fff"/>`}
+function accJadeHat(){return`<path d="M 42,32 Q 60,20 78,32 L 78,42 L 42,42 Z" fill="#2a5a4a"/><path d="M 44,34 Q 60,24 76,34 L 76,40 L 44,40 Z" fill="#5a8a7a"/><rect x="42" y="42" width="36" height="3" fill="#f0c040"/><circle cx="60" cy="28" r="2.5" fill="#7aceb0"/>`}
+function accEunuchHat(){return`<ellipse cx="60" cy="30" rx="30" ry="9" fill="#1a0e08"/><rect x="30" y="30" width="60" height="14" fill="#2a1810"/><ellipse cx="60" cy="44" rx="30" ry="6" fill="#1a0e08"/><circle cx="60" cy="20" r="3.5" fill="#c0392b"/><circle cx="60" cy="20" r="1.5" fill="#f0c040"/><line x1="32" y1="46" x2="30" y2="60" stroke="#1a0e08" stroke-width=".8"/><line x1="88" y1="46" x2="90" y2="60" stroke="#1a0e08" stroke-width=".8"/>`}
+function accFlower(){return`<g transform="translate(36,34)"><circle r="2" fill="#f8a8b8"/><circle cx="-2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="-2.5" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="2.5" r="1.6" fill="#f8a8b8"/><circle r=".8" fill="#f0c040"/></g><g transform="translate(84,34)"><circle r="2" fill="#f8a8b8"/><circle cx="-2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="-2.5" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="2.5" r="1.6" fill="#f8a8b8"/><circle r=".8" fill="#f0c040"/></g>`}
+function accSimpleflower(){return`<g transform="translate(36,36)"><circle r="1.8" fill="#88c0a8"/><circle cx="-2" cy="0" r="1.4" fill="#88c0a8"/><circle cx="2" cy="0" r="1.4" fill="#88c0a8"/><circle r=".7" fill="#f0c040"/></g>`}
+
+const HAIR={bun:hairBun,doubleRing:hairDoubleRing,maleBun:hairMaleBun,eunuch:hairEunuch,crownM:hairCrownM};
+const ACC={phoenix:accPhoenix,emperor:accEmperor,butterfly:accButterfly,goldTassel:accGoldTassel,jade:accJade,jadeS:accJadeS,pearl:accPearl,silver:accSilver,jadeHat:accJadeHat,eunuchHat:accEunuchHat,flower:accFlower,simpleflower:accSimpleflower};
+
+function makeAvatar(charId){
+  const c=CHARS.find(x=>x.id===charId);if(!c)return'';
+  const skin='#fde2c2',robeL=lighten(c.robe,.15);
+  const isFemale=!c.isM&&!c.isE;
+  return`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="g_${c.id}" cx=".5" cy=".4"><stop offset="0%" stop-color="${lighten(c.bg,.2)}"/><stop offset="100%" stop-color="${c.bg}"/></radialGradient></defs>
+    <circle cx="60" cy="60" r="60" fill="url(#g_${c.id})"/>
+    <path d="M 22,120 L 22,98 Q 35,82 60,82 Q 85,82 98,98 L 98,120 Z" fill="${c.robe}"/>
+    <path d="M 48,100 L 60,86 L 72,100 L 72,120 L 48,120 Z" fill="${robeL}"/>
+    <path d="M 56,88 L 60,82 L 64,88 L 60,94 Z" fill="${darken(c.robe,.2)}"/>
+    <rect x="54" y="76" width="12" height="12" fill="${skin}"/>
+    <ellipse cx="60" cy="60" rx="20" ry="24" fill="${skin}"/>
+    ${HAIR[c.hair]?HAIR[c.hair]():''}
+    <ellipse cx="52" cy="62" rx="1.6" ry="2.6" fill="#1a0e08"/>
+    <ellipse cx="68" cy="62" rx="1.6" ry="2.6" fill="#1a0e08"/>
+    <path d="M 47,57 Q 52,54 56,57" stroke="#1a0e08" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <path d="M 64,57 Q 68,54 73,57" stroke="#1a0e08" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    ${isFemale?`<ellipse cx="60" cy="75" rx="2.5" ry="1.6" fill="#c0392b"/><ellipse cx="48" cy="71" rx="3.5" ry="2.3" fill="#e8a0a0" opacity=".45"/><ellipse cx="72" cy="71" rx="3.5" ry="2.3" fill="#e8a0a0" opacity=".45"/><circle cx="60" cy="50" r="1.6" fill="#c0392b" opacity=".8"/>`:`<path d="M 56,74 Q 60,76 64,74" stroke="#8a3a2a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`}
+    ${c.beard?`<path d="M 50,80 Q 60,90 70,80" stroke="#2a1810" stroke-width="1.2" fill="none"/><path d="M 54,82 L 54,86 M 60,82 L 60,87 M 66,82 L 66,86" stroke="#2a1810" stroke-width="1" stroke-linecap="round"/>`:''}
+    ${ACC[c.acc]?ACC[c.acc]():''}
+  </svg>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CARDS & DECK
+// ════════════════════════════════════════════════════════════════
+const SUITS=['♠','♥','♦','♣'];
+const SC=['blk','red','red','blk'];
+const RN=['','','2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const PHASES=['preflop','flop','turn','river','showdown'];
+const PNAMES={preflop:'翻牌前',flop:'翻牌',turn:'转牌',river:'河牌',showdown:'摊牌'};
+
+function mkDeck(){const d=[];for(let s=0;s<4;s++)for(let r=2;r<=14;r++)d.push({s,r});return d}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]]}return b}
+function cardHTML(c,down=false,big=false){const sz=big?' big':'';if(!c||down)return`<div class="card down${sz}"></div>`;return`<div class="card ${SC[c.s]}${sz}"><span class="cr">${RN[c.r]}</span><span class="cs">${SUITS[c.s]}</span></div>`}
+
+// ════════════════════════════════════════════════════════════════
+//  HAND EVALUATION
+// ════════════════════════════════════════════════════════════════
+function eval5(cards){
+  const ranks=cards.map(c=>c.r).sort((a,b)=>b-a);
+  const suits=cards.map(c=>c.s);
+  const rc={};ranks.forEach(r=>rc[r]=(rc[r]||0)+1);
+  const isF=suits.every(s=>s===suits[0]);
+  const ur=[...new Set(ranks)].sort((a,b)=>b-a);
+  let isS=false,sh=0;
+  if(ur.length===5){
+    if(ur[0]-ur[4]===4){isS=true;sh=ur[0]}
+    else if(ur[0]===14&&ur[1]===5&&ur[2]===4&&ur[3]===3&&ur[4]===2){isS=true;sh=5}
+  }
+  const g=Object.entries(rc).map(([r,c])=>({r:+r,c})).sort((a,b)=>b.c-a.c||b.r-a.r);
+  if(isF&&isS&&sh===14)return{hr:9,name:'皇家同花顺',v:[14]};
+  if(isF&&isS)return{hr:8,name:'同花顺',v:[sh]};
+  if(g[0].c===4)return{hr:7,name:'四条',v:[g[0].r,g[1].r]};
+  if(g[0].c===3&&g[1].c===2)return{hr:6,name:'葫芦',v:[g[0].r,g[1].r]};
+  if(isF)return{hr:5,name:'同花',v:ranks};
+  if(isS)return{hr:4,name:'顺子',v:[sh]};
+  if(g[0].c===3)return{hr:3,name:'三条',v:[g[0].r,...ranks.filter(r=>r!==g[0].r).slice(0,2)]};
+  if(g[0].c===2&&g[1].c===2){const ps=[g[0].r,g[1].r].sort((a,b)=>b-a);const k=ranks.find(r=>r!==ps[0]&&r!==ps[1]);return{hr:2,name:'两对',v:[...ps,k]}}
+  if(g[0].c===2)return{hr:1,name:'一对',v:[g[0].r,...ranks.filter(r=>r!==g[0].r).slice(0,3)]};
+  return{hr:0,name:'高牌',v:ranks.slice(0,5)};
+}
+function bestHand7(cs){
+  if(cs.length<5)return null;
+  if(cs.length===5)return eval5(cs);
+  let best=null;
+  for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++){
+    const five=cs.filter((_,x)=>x!==i&&x!==j);
+    const h=eval5(five);
+    if(!best||cmpHand(h,best)>0)best=h;
+  }
+  return best;
+}
+function cmpHand(a,b){
+  if(a.hr!==b.hr)return a.hr-b.hr;
+  for(let i=0;i<Math.max(a.v.length,b.v.length);i++){const d=(a.v[i]||0)-(b.v[i]||0);if(d)return d}
+  return 0;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════
+let MP={
+  isHost:false,
+  peer:null,
+  myId:null,
+  myName:'',
+  myCharId:null,
+  hostId:null,
+  conns:{},      // host: {peerId:conn}; client: {host:conn}
+  myCards:[],    // private hole cards (clients only; host reads from G)
+};
+
+let G={
+  players:[],    // [{id,name,charId,chips,cards,folded,allIn,bet,totalBet,chipsStart,drinks,disconnected}]
+  deck:[],
+  com:[],
+  pot:0,
+  dealer:-1,
+  curIdx:0,
+  curBet:0,
+  bb:10,
+  sb:5,
+  startChips:100,
+  handNum:0,
+  phase:'lobby',
+  toAct:[],
+};
+
+let PUBLIC_VIEW=null; // for clients: most recent gameView from host
+
+// ════════════════════════════════════════════════════════════════
+//  AVATAR PICKER
+// ════════════════════════════════════════════════════════════════
+function rerollAvatar(){
+  // Pick a random character not already taken (server hasn't allocated yet, so just random)
+  const taken=new Set(G.players.map(p=>p.charId));
+  let available=CHARS.filter(c=>!taken.has(c.id));
+  if(!available.length)available=CHARS;
+  const c=available[0|Math.random()*available.length];
+  MP.myCharId=c.id;
+  renderMyAvatar();
+}
+function renderMyAvatar(){
+  const c=CHARS.find(x=>x.id===MP.myCharId);
+  document.getElementById('my-avatar-svg').innerHTML=makeAvatar(MP.myCharId);
+  document.getElementById('my-avatar-name').textContent=c.name;
+  document.getElementById('my-avatar-sub').textContent=c.sub;
+}
+rerollAvatar();
+
+// ════════════════════════════════════════════════════════════════
+//  ENTRY / TABS
+// ════════════════════════════════════════════════════════════════
+function switchTab(which){
+  document.getElementById('tab-host').classList.toggle('active',which==='host');
+  document.getElementById('tab-join').classList.toggle('active',which==='join');
+  document.getElementById('tab-host-panel').style.display=which==='host'?'block':'none';
+  document.getElementById('tab-join-panel').style.display=which==='join'?'block':'none';
+}
+
+// Read URL ?room= and auto-switch to join
+(function autoJoinFromURL(){
+  const params=new URLSearchParams(location.search);
+  const room=params.get('room');
+  if(room){
+    switchTab('join');
+    document.getElementById('join-code').value=room;
+  }
+})();
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PEERJS - HOST
+// ════════════════════════════════════════════════════════════════
+function getMyName(){return (document.getElementById('my-name').value||'').trim()}
+
+function hostStart(){
+  const name=getMyName();
+  if(!name){toast('请输入您的名字');return}
+  MP.myName=name;
+  MP.isHost=true;
+  G.startChips=Math.max(20,parseInt(document.getElementById('s-chips').value)||100);
+  G.bb=Math.max(2,parseInt(document.getElementById('s-bb').value)||10);
+  G.sb=Math.max(1,Math.floor(G.bb/2));
+
+  msg('正在创建房间...');
+  MP.peer=new Peer({debug:1});
+  MP.peer.on('open',id=>{
+    MP.myId=id;
+    // Add host as first player
+    G.players=[mkPlayer(id,MP.myName,MP.myCharId,true)];
+    // Show lobby
+    showShareUI(id);
+    showScreen('screen-lobby');
+    document.getElementById('lobby-host-btns').style.display='block';
+    document.getElementById('lobby-wait').style.display='none';
+    renderLobby();
+    msgClear();
+  });
+  MP.peer.on('error',err=>{
+    console.error(err);
+    toast('网络错误：'+err.type);
+  });
+  MP.peer.on('connection',conn=>{
+    conn.on('open',()=>{
+      MP.conns[conn.peer]=conn;
+      conn.on('data',data=>onHostReceive(conn.peer,data));
+      conn.on('close',()=>onPeerClose(conn.peer));
+      conn.on('error',e=>console.error('conn err',e));
+    });
+  });
+}
+
+function mkPlayer(id,name,charId,isHost=false){
+  return{id,name,charId,chips:G.startChips,cards:[],folded:false,allIn:false,bet:0,totalBet:0,chipsStart:G.startChips,drinks:0,disconnected:false,isHost};
+}
+
+function showShareUI(roomId){
+  const url=location.origin+location.pathname+'?room='+roomId;
+  document.getElementById('share-url').value=url;
+  document.getElementById('share-code').textContent=roomId;
+  document.getElementById('share-box').style.display='block';
+}
+
+function copyShare(){
+  const inp=document.getElementById('share-url');
+  inp.select();
+  try{
+    navigator.clipboard.writeText(inp.value);
+    msg('已复制邀请链接');
+  }catch(e){
+    document.execCommand('copy');
+    msg('已复制');
+  }
+}
+
+function onHostReceive(peerId,data){
+  if(data.type==='join'){
+    if(G.phase!=='lobby'){
+      MP.conns[peerId].send({type:'error',msg:'游戏已开始，无法加入'});
+      MP.conns[peerId].close();
+      return;
+    }
+    if(G.players.length>=8){
+      MP.conns[peerId].send({type:'error',msg:'房间已满'});
+      return;
+    }
+    if(G.players.some(p=>p.name===data.name)){
+      MP.conns[peerId].send({type:'error',msg:'名字已被使用'});
+      return;
+    }
+    // Assign unique char if taken
+    let charId=data.charId;
+    const taken=new Set(G.players.map(p=>p.charId));
+    if(taken.has(charId)){
+      const avail=CHARS.filter(c=>!taken.has(c.id));
+      charId=avail.length?avail[0|Math.random()*avail.length].id:CHARS[0].id;
+    }
+    G.players.push(mkPlayer(peerId,data.name,charId));
+    MP.conns[peerId].send({type:'welcome',yourId:peerId,assignedChar:charId});
+    broadcastLobby();
+    renderLobby();
+  }else if(data.type==='action'){
+    if(G.phase==='lobby'||G.phase==='showdown')return;
+    if(G.players[G.curIdx].id!==peerId){toast('非您的回合');return}
+    handleAction(data.act,data.amount);
+  }else if(data.type==='nextHand'){
+    // ignore - host controls
+  }
+}
+
+function onPeerClose(peerId){
+  const p=G.players.find(x=>x.id===peerId);
+  if(!p)return;
+  delete MP.conns[peerId];
+  if(G.phase==='lobby'){
+    G.players=G.players.filter(x=>x.id!==peerId);
+    broadcastLobby();
+    renderLobby();
+  }else{
+    p.disconnected=true;
+    p.folded=true;
+    toast(`${p.name} 已断开连接`);
+    if(G.curIdx>=0&&G.players[G.curIdx].id===peerId){
+      advance();
+    }else{
+      broadcastGame();
+    }
+    if(G.players.filter(x=>!x.folded).length<=1){nextPhase()}
+  }
+}
+
+function broadcastLobby(){
+  const msg={type:'lobby',players:G.players.map(serPlayerLobby)};
+  Object.values(MP.conns).forEach(c=>{try{c.send(msg)}catch(e){}});
+}
+function serPlayerLobby(p){return{id:p.id,name:p.name,charId:p.charId,isHost:p.isHost}}
+
+// ════════════════════════════════════════════════════════════════
+//  PEERJS - CLIENT
+// ════════════════════════════════════════════════════════════════
+function clientJoin(){
+  const name=getMyName();
+  if(!name){toast('请输入您的名字');return}
+  let code=document.getElementById('join-code').value.trim();
+  if(!code){toast('请输入房间码');return}
+  // Extract from URL if pasted
+  const m=code.match(/[?&]room=([^&]+)/);
+  if(m)code=m[1];
+
+  MP.myName=name;
+  MP.isHost=false;
+  MP.hostId=code;
+
+  msg('正在连接房间...');
+  MP.peer=new Peer({debug:1});
+  MP.peer.on('open',myId=>{
+    MP.myId=myId;
+    const conn=MP.peer.connect(code,{reliable:true});
+    MP.conns.host=conn;
+    let connected=false;
+    conn.on('open',()=>{
+      connected=true;
+      conn.send({type:'join',name:MP.myName,charId:MP.myCharId});
+      conn.on('data',data=>onClientReceive(data));
+      conn.on('close',()=>{
+        toast('与房主的连接已断开');
+        setTimeout(()=>{showScreen('screen-entry')},2000);
+      });
+      conn.on('error',e=>{toast('连接错误：'+e.message)});
+    });
+    setTimeout(()=>{if(!connected){toast('连接超时，请检查房间码');msgClear()}},10000);
+  });
+  MP.peer.on('error',err=>{
+    msgClear();
+    if(err.type==='peer-unavailable')toast('房间不存在或房主已离线');
+    else toast('网络错误：'+err.type);
+  });
+}
+
+function onClientReceive(data){
+  if(data.type==='welcome'){
+    MP.myId=data.yourId;
+    MP.myCharId=data.assignedChar;
+    msgClear();
+    showScreen('screen-lobby');
+    document.getElementById('lobby-wait').style.display='block';
+    document.getElementById('share-box').style.display='none';
+  }else if(data.type==='lobby'){
+    G.players=data.players;
+    renderLobby();
+  }else if(data.type==='gameStart'){
+    showScreen('screen-game');
+  }else if(data.type==='gameView'){
+    PUBLIC_VIEW=data.view;
+    if(data.yourCards)MP.myCards=data.yourCards;
+    showScreen('screen-game');
+    renderGameClient();
+  }else if(data.type==='drink'){
+    showDrinkUI(data);
+  }else if(data.type==='endGame'){
+    showFinal(data.players);
+  }else if(data.type==='error'){
+    toast(data.msg);
+  }
+}
+
+function clientSendAction(act,amount){
+  if(!MP.conns.host)return;
+  MP.conns.host.send({type:'action',act,amount});
+}
+
+// ════════════════════════════════════════════════════════════════
+//  LOBBY UI
+// ════════════════════════════════════════════════════════════════
+function renderLobby(){
+  document.getElementById('lobby-count').textContent=G.players.length;
+  const list=document.getElementById('lobby-players');
+  list.innerHTML='';
+  if(!G.players.length){
+    list.innerHTML='<div class="lobby-empty">还没有人加入</div>';
+  }else{
+    G.players.forEach(p=>{
+      const c=CHARS.find(x=>x.id===p.charId);
+      const isMe=p.id===MP.myId;
+      list.innerHTML+=`<div class="lobby-p">
+        ${p.isHost?'<div class="host-badge">房主</div>':''}
+        <div class="avatar avatar-lg">${makeAvatar(p.charId)}</div>
+        <div class="lp-name">${p.name}${isMe?' (我)':''}</div>
+        <div class="lp-sub">${c?c.name:''}</div>
+      </div>`;
+    });
+  }
+  if(MP.isHost){
+    const btn=document.getElementById('start-game-btn');
+    if(G.players.length>=2){btn.disabled=false;btn.textContent='▶ 开始游戏 ('+G.players.length+'人)'}
+    else{btn.disabled=true;btn.textContent='▶ 开始游戏（至少2人）'}
+  }
+}
+
+function hostStartGame(){
+  if(G.players.length<2){toast('至少需要 2 人');return}
+  G.phase='preflop';
+  G.handNum=0;
+  G.dealer=-1;
+  // Tell everyone to switch to game screen
+  Object.values(MP.conns).forEach(c=>{try{c.send({type:'gameStart'})}catch(e){}});
+  showScreen('screen-game');
+  hostDealHand();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HOST: DEAL & BETTING
+// ════════════════════════════════════════════════════════════════
+function hostDealHand(){
+  // Buy back eliminated players? For now they stay out
+  const alive=G.players.filter(p=>p.chips>0&&!p.disconnected);
+  if(alive.length<2){hostEndGame();return}
+
+  G.handNum++;
+  G.players.forEach(p=>{p.cards=[];p.folded=p.chips===0||p.disconnected;p.allIn=false;p.bet=0;p.totalBet=0;p.chipsStart=p.chips});
+  G.deck=shuffle(mkDeck());G.com=[];G.pot=0;G.curBet=0;G.phase='preflop';
+
+  // Advance dealer
+  let d=G.dealer;
+  for(let i=0;i<G.players.length;i++){
+    d=(d+1)%G.players.length;
+    if(G.players[d].chips>0&&!G.players[d].disconnected)break;
+  }
+  G.dealer=d;
+
+  // Deal cards
+  G.players.forEach(p=>{
+    if(p.chips>0&&!p.disconnected){
+      p.cards=[G.deck.pop(),G.deck.pop()];
+      p.folded=false;
+    }
+  });
+
+  // Blinds
+  const sbI=nextFrom(G.dealer,1);
+  const bbI=nextFrom(G.dealer,2);
+  const sb=G.players[sbI],bb=G.players[bbI];
+  const sbAmt=Math.min(G.sb,sb.chips);
+  const bbAmt=Math.min(G.bb,bb.chips);
+  sb.chips-=sbAmt;sb.bet=sbAmt;sb.totalBet=sbAmt;G.pot+=sbAmt;
+  bb.chips-=bbAmt;bb.bet=bbAmt;bb.totalBet=bbAmt;G.pot+=bbAmt;
+  G.curBet=bbAmt;
+  if(sb.chips===0)sb.allIn=true;
+  if(bb.chips===0)bb.allIn=true;
+
+  // Start preflop betting from UTG
+  const utg=nextFrom(bbI,1);
+  G.toAct=buildToAct(utg);
+  G.curIdx=G.toAct[0];
+
+  broadcastGame();
+}
+
+function nextFrom(startI,steps){
+  let idx=startI,cnt=0;
+  for(let i=0;i<G.players.length*2;i++){
+    idx=(idx+1)%G.players.length;
+    const p=G.players[idx];
+    if(!p.folded&&p.chips>0&&!p.disconnected){cnt++;if(cnt===steps)return idx}
+  }
+  return startI;
+}
+
+function buildToAct(firstI){
+  const q=[];let idx=firstI,cnt=0;
+  do{
+    const p=G.players[idx];
+    if(!p.folded&&!p.allIn&&p.chips>0&&!p.disconnected)q.push(idx);
+    idx=(idx+1)%G.players.length;cnt++;
+  }while(cnt<G.players.length);
+  return q;
+}
+
+function handleAction(act,amount){
+  const p=G.players[G.curIdx];
+  if(act==='fold'){p.folded=true}
+  else if(act==='check'){if(G.curBet!==p.bet)return}
+  else if(act==='call'){
+    const amt=Math.min(G.curBet-p.bet,p.chips);
+    p.chips-=amt;p.bet+=amt;p.totalBet+=amt;G.pot+=amt;
+    if(p.chips===0)p.allIn=true;
+  }else if(act==='raise'){
+    const minTo=G.curBet+G.bb;
+    let to=Math.max(minTo,Math.min(amount,p.chips+p.bet));
+    const add=to-p.bet;
+    p.chips-=add;p.bet=to;p.totalBet+=add;G.pot+=add;G.curBet=to;
+    if(p.chips===0)p.allIn=true;
+    // Reset toAct after raiser
+    const start=(G.curIdx+1)%G.players.length;
+    const newQ=[];let idx=start,cnt=0;
+    do{const pp=G.players[idx];if(idx!==G.curIdx&&!pp.folded&&!pp.allIn&&pp.chips>0&&!pp.disconnected)newQ.push(idx);idx=(idx+1)%G.players.length;cnt++}while(cnt<G.players.length);
+    G.toAct=[G.curIdx,...newQ];
+  }else if(act==='allin'){
+    const add=p.chips,to=p.bet+add;
+    if(to>G.curBet){
+      G.curBet=to;
+      const start=(G.curIdx+1)%G.players.length;
+      const newQ=[];let idx=start,cnt=0;
+      do{const pp=G.players[idx];if(idx!==G.curIdx&&!pp.folded&&!pp.allIn&&pp.chips>0&&!pp.disconnected)newQ.push(idx);idx=(idx+1)%G.players.length;cnt++}while(cnt<G.players.length);
+      G.toAct=[G.curIdx,...newQ];
+    }
+    p.totalBet+=add;G.pot+=add;p.bet=to;p.chips=0;p.allIn=true;
+  }
+  advance();
+}
+
+function advance(){
+  G.toAct.shift();
+  const nf=G.players.filter(p=>!p.folded);
+  if(nf.length<=1){return finishToShowdown()}
+  if(G.toAct.length===0){return nextPhase()}
+  G.curIdx=G.toAct[0];
+  broadcastGame();
+}
+
+function nextPhase(){
+  G.players.forEach(p=>{p.bet=0});G.curBet=0;
+  const nf=G.players.filter(p=>!p.folded);
+  if(nf.length<=1){return finishToShowdown()}
+  if(G.phase==='preflop'){G.phase='flop';G.com=[G.deck.pop(),G.deck.pop(),G.deck.pop()]}
+  else if(G.phase==='flop'){G.phase='turn';G.com.push(G.deck.pop())}
+  else if(G.phase==='turn'){G.phase='river';G.com.push(G.deck.pop())}
+  else if(G.phase==='river'){return finishToShowdown()}
+
+  const canAct=nf.filter(p=>!p.allIn&&p.chips>0&&!p.disconnected);
+  broadcastGame();
+  if(canAct.length<2){
+    setTimeout(()=>{
+      if(G.phase==='river')finishToShowdown();
+      else nextPhase();
+    },800);
+    return;
+  }
+  const firstI=nextFrom(G.dealer,1);
+  G.toAct=buildToAct(firstI);
+  G.curIdx=G.toAct[0];
+  broadcastGame();
+}
+
+function finishToShowdown(){
+  G.phase='showdown';
+  // Distribute pot
+  const nf=G.players.filter(p=>!p.folded);
+  let result;
+  if(nf.length===1){
+    nf[0].chips+=G.pot;
+    result={winners:[nf[0]],hand:null,potAmount:G.pot};
+  }else{
+    result=distributePot();
+  }
+  G.pot=0;
+  broadcastGame();
+  setTimeout(()=>{hostShowDrink(result)},1500);
+}
+
+function distributePot(){
+  const contribs=G.players.filter(p=>p.totalBet>0).map(p=>({id:p.id,tb:p.totalBet})).sort((a,b)=>a.tb-b.tb);
+  const pots=[];
+  let prev=0;const seen=new Set();
+  for(const c of contribs){
+    if(seen.has(c.id))continue;
+    const lvl=c.tb;
+    const dlt=lvl-prev;
+    const contrib=G.players.filter(p=>p.totalBet>=lvl);
+    const eligible=contrib.filter(p=>!p.folded);
+    pots.push({amount:dlt*contrib.length,eligible});
+    contribs.filter(p=>p.tb===lvl).forEach(p=>seen.add(p.id));
+    prev=lvl;
+  }
+  let mainWinners=null,mainHand=null,potAmount=0;
+  for(const pot of pots){
+    if(!pot.eligible.length)continue;
+    const evd=pot.eligible.map(p=>({p,h:bestHand7([...p.cards,...G.com])})).sort((a,b)=>cmpHand(b.h,a.h));
+    const bh=evd[0].h;
+    const ws=evd.filter(e=>cmpHand(e.h,bh)===0).map(e=>e.p);
+    const share=Math.floor(pot.amount/ws.length);
+    ws.forEach(p=>{p.chips+=share});
+    if(pot.amount%ws.length)ws[0].chips+=pot.amount%ws.length;
+    if(!mainWinners){mainWinners=ws;mainHand=bh;potAmount=pot.amount}
+    else potAmount+=pot.amount;
+  }
+  return{winners:mainWinners||[],hand:mainHand,potAmount};
+}
+
+function hostShowDrink(result){
+  const winIds=new Set(result.winners.map(p=>p.id));
+  const drinkItems=[];
+  let specialMsg='';let allDrink=false;
+  if(result.hand&&result.hand.hr===9){allDrink=true;specialMsg='🎰 皇家同花顺！全桌举杯干杯！！'}
+  else if(result.hand&&result.hand.hr===8)specialMsg='🔥 同花顺！输家各多喝 2 口！';
+  else if(result.hand&&result.hand.hr===7)specialMsg='💥 四条！输家各多喝 2 口！';
+  const extra=(result.hand&&(result.hand.hr===8||result.hand.hr===7))?2:0;
+
+  G.players.forEach(p=>{
+    if(allDrink){const s=3;p.drinks+=s;drinkItems.push({pid:p.id,name:p.name,charId:p.charId,sips:s});return}
+    if(winIds.has(p.id))return;
+    const lost=p.chipsStart-p.chips;
+    if(lost<=0&&p.totalBet===0)return;
+    let sips=Math.max(1,Math.floor(Math.max(lost,p.totalBet)/10))+extra;
+    if(p.chips===0&&p.chipsStart>0)sips=Math.max(sips,5);
+    p.drinks+=sips;
+    drinkItems.push({pid:p.id,name:p.name,charId:p.charId,sips});
+  });
+
+  const drinkData={
+    winners:result.winners.map(p=>({id:p.id,name:p.name,charId:p.charId,gain:p.chips-p.chipsStart})),
+    hand:result.hand,
+    specialMsg,
+    drinkItems,
+    players:G.players.map(serPlayerLB),
+    handNum:G.handNum,
+  };
+  // Send to all clients
+  Object.values(MP.conns).forEach(c=>{try{c.send({type:'drink',...drinkData})}catch(e){}});
+  // Show locally
+  showDrinkUI({type:'drink',...drinkData});
+}
+
+function serPlayerLB(p){return{id:p.id,name:p.name,charId:p.charId,chips:p.chips,drinks:p.drinks}}
+
+function hostNextHand(){
+  // Continue
+  if(G.players.filter(p=>p.chips>0&&!p.disconnected).length<2){hostEndGame();return}
+  hostDealHand();
+}
+
+function hostEndGame(){
+  const ps=G.players.map(serPlayerLB);
+  Object.values(MP.conns).forEach(c=>{try{c.send({type:'endGame',players:ps})}catch(e){}});
+  showFinal(ps);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BROADCAST GAME VIEW
+// ════════════════════════════════════════════════════════════════
+function makeGameView(){
+  return{
+    handNum:G.handNum,
+    phase:G.phase,
+    com:G.com,
+    pot:G.pot,
+    dealer:G.dealer,
+    curIdx:G.curIdx,
+    curBet:G.curBet,
+    bb:G.bb,
+    sb:G.sb,
+    players:G.players.map(p=>({
+      id:p.id,name:p.name,charId:p.charId,chips:p.chips,
+      folded:p.folded,allIn:p.allIn,bet:p.bet,totalBet:p.totalBet,
+      drinks:p.drinks,disconnected:p.disconnected,isHost:p.isHost,
+      hasCards:p.cards&&p.cards.length>0,
+      revealedCards:G.phase==='showdown'&&!p.folded?p.cards:null,
+    })),
+  };
+}
+
+function broadcastGame(){
+  const view=makeGameView();
+  // Send to each client with their own hole cards
+  G.players.forEach(p=>{
+    if(p.id===MP.myId)return; // skip self
+    const conn=MP.conns[p.id];
+    if(!conn)return;
+    try{
+      conn.send({type:'gameView',view,yourCards:p.cards});
+    }catch(e){console.error('send err',e)}
+  });
+  // Render locally
+  PUBLIC_VIEW=view;
+  const me=G.players.find(p=>p.id===MP.myId);
+  MP.myCards=me?me.cards:[];
+  renderGameClient();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CLIENT GAME RENDER
+// ════════════════════════════════════════════════════════════════
+function renderGameClient(){
+  if(!PUBLIC_VIEW)return;
+  const v=PUBLIC_VIEW;
+  document.getElementById('g-hand').textContent=`第 ${v.handNum} 局`;
+  document.getElementById('g-pot').textContent=v.pot;
+  document.getElementById('g-phase').textContent=PNAMES[v.phase]||'';
+
+  const pi=PHASES.indexOf(v.phase);
+  for(let i=0;i<5;i++){const d=document.getElementById(`pd${i}`);d.className='pd'+(i<pi?' done':i===pi?' now':'')}
+
+  const cc=document.getElementById('g-com');cc.innerHTML='';
+  for(let i=0;i<5;i++)cc.innerHTML+=i<v.com.length?cardHTML(v.com[i]):'<div class="card-ph"></div>';
+
+  const sbI=nextFromView(v,v.dealer,1);
+  const bbI=nextFromView(v,v.dealer,2);
+  const roles={};
+  if(v.players[v.dealer])roles[v.players[v.dealer].id]='D';
+  if(v.players[sbI])roles[v.players[sbI].id]='小盲';
+  if(v.players[bbI])roles[v.players[bbI].id]='大盲';
+
+  const grid=document.getElementById('g-players');grid.innerHTML='';
+
+  // Sort so "me" first
+  const sorted=[...v.players];
+  const meIdx=sorted.findIndex(p=>p.id===MP.myId);
+  if(meIdx>0){sorted.unshift(...sorted.splice(meIdx,1))}
+
+  sorted.forEach(p=>{
+    const c=CHARS.find(x=>x.id===p.charId);
+    const isMe=p.id===MP.myId;
+    let cls='pp';
+    if(isMe)cls+=' me';
+    if(p.id===v.players[v.curIdx]?.id&&!p.folded&&!p.allIn&&v.phase!=='showdown')cls+=' cur';
+    if(p.folded)cls+=' fold';
+    if(p.disconnected)cls+=' disc';
+
+    const badge=roles[p.id]?`<span class="badge">${roles[p.id]}</span>`:'';
+    const meTag=isMe?`<span class="me-tag">我</span>`:'';
+    let cards='';
+    if(p.hasCards){
+      if(p.revealedCards)cards=p.revealedCards.map(card=>cardHTML(card)).join('');
+      else if(isMe&&MP.myCards.length)cards=MP.myCards.map(card=>cardHTML(card)).join('');
+      else if(!p.folded)cards=`<div class="card down"></div><div class="card down"></div>`;
+    }
+    const betTxt=p.bet>0?`已下注 <b>${p.bet}</b>`:'';
+    const stTxt=p.disconnected?'已断线':p.folded?'弃牌':p.allIn?'全压 ALL IN':'';
+    const stCls=p.allIn?' allin':'';
+    const st=stTxt?`<div class="pp-status${stCls}">${stTxt}</div>`:'';
+    const dr=p.drinks?`<div class="pp-drinks">🍺 已喝 ${p.drinks} 口</div>`:'';
+
+    grid.innerHTML+=`<div class="${cls}">
+      <div class="pp-top">
+        <div class="avatar avatar-md">${makeAvatar(p.charId)}</div>
+        <div class="pp-info">
+          <div class="pp-name">${p.name}${meTag}${badge}</div>
+          <div class="pp-char">${c?c.name:''}</div>
+        </div>
+        <div class="pp-chips">💰${p.chips}</div>
+      </div>
+      <div class="pp-cards">${cards}</div>
+      <div class="pp-bet">${betTxt}</div>
+      ${st}${dr}
+    </div>`;
+  });
+
+  // Action area
+  renderMyActions();
+}
+
+function nextFromView(v,startI,steps){
+  let idx=startI,cnt=0;
+  for(let i=0;i<v.players.length*2;i++){
+    idx=(idx+1)%v.players.length;
+    const p=v.players[idx];
+    if(!p.folded&&p.chips>0&&!p.disconnected){cnt++;if(cnt===steps)return idx}
+  }
+  return startI;
+}
+
+function renderMyActions(){
+  const v=PUBLIC_VIEW;
+  const me=v.players.find(p=>p.id===MP.myId);
+  const mc=document.getElementById('g-mycards');
+  if(me&&MP.myCards&&MP.myCards.length&&!me.folded){
+    mc.innerHTML=`<div style="opacity:.6;font-size:.78em;margin-right:8px;align-self:center">您的底牌</div>`+MP.myCards.map(c=>cardHTML(c)).join('');
+  }else mc.innerHTML='';
+
+  const title=document.getElementById('g-act-title');
+  const btns=document.getElementById('g-act-btns');
+  btns.innerHTML='';
+  document.getElementById('g-raise').style.display='none';
+
+  if(v.phase==='showdown'){
+    title.innerHTML='<strong>摊牌中...</strong>';
+    return;
+  }
+
+  const cur=v.players[v.curIdx];
+  if(!cur){title.innerHTML='';return}
+  const isMyTurn=cur.id===MP.myId;
+
+  if(!isMyTurn){
+    title.innerHTML=`等待 <strong>${cur.name}</strong> 行动...`;
+    return;
+  }
+
+  if(me.folded||me.allIn){
+    title.innerHTML='<strong>等待结果...</strong>';
+    return;
+  }
+
+  title.innerHTML=`轮到 <strong>${me.name}</strong> 行动`;
+  const canCheck=v.curBet===me.bet;
+  const callAmt=Math.min(v.curBet-me.bet,me.chips);
+
+  btns.innerHTML+=`<button class="btn btn-red" onclick="actSend('fold')">弃牌</button>`;
+  if(canCheck)btns.innerHTML+=`<button class="btn btn-green" onclick="actSend('check')">过牌 ✓</button>`;
+  else btns.innerHTML+=`<button class="btn btn-blue" onclick="actSend('call')">跟注 ${callAmt}</button>`;
+  if(me.chips>callAmt){
+    btns.innerHTML+=`<button class="btn btn-gold" onclick="toggleRaise(true)">加注 ↑</button>`;
+    btns.innerHTML+=`<button class="btn btn-ghost" onclick="actSend('allin')">ALL IN</button>`;
+  }
+}
+
+function toggleRaise(show){
+  const r=document.getElementById('g-raise');
+  if(show===undefined)show=r.style.display==='none';
+  r.style.display=show?'flex':'none';
+  if(show){
+    const v=PUBLIC_VIEW;
+    const me=v.players.find(p=>p.id===MP.myId);
+    const minTo=v.curBet+v.bb;
+    const maxTo=me.chips+me.bet;
+    const rv=document.getElementById('raise-val');
+    rv.min=minTo;rv.max=maxTo;rv.value=Math.min(minTo,maxTo);
+  }
+}
+
+function actSend(act,amount){
+  if(MP.isHost){
+    handleAction(act,amount);
+  }else{
+    clientSendAction(act,amount);
+  }
+}
+
+function actRaise(){
+  const v=parseInt(document.getElementById('raise-val').value);
+  if(!v||v<PUBLIC_VIEW.curBet+PUBLIC_VIEW.bb){toast(`最小加注到 ${PUBLIC_VIEW.curBet+PUBLIC_VIEW.bb}`);return}
+  actSend('raise',v);
+  toggleRaise(false);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DRINK SCREEN
+// ════════════════════════════════════════════════════════════════
+function showDrinkUI(data){
+  const sp=document.getElementById('d-special');
+  if(data.specialMsg){sp.textContent=data.specialMsg;sp.style.display='block'}else sp.style.display='none';
+
+  const wb=document.getElementById('d-win');
+  const w0=data.winners[0];
+  const wnames=data.winners.map(w=>w.name).join(' & ');
+  const wAvatar=w0?`<div class="avatar avatar-lg">${makeAvatar(w0.charId)}</div>`:'';
+  wb.innerHTML=`${wAvatar}<div style="text-align:left"><div style="opacity:.65;font-size:.85em">本局获胜</div><div class="wname">${wnames}</div>${data.hand?`<div class="whand">${data.hand.name}</div>`:''}${w0?`<div class="wgain">+${Math.max(0,w0.gain)} 筹码</div>`:''}</div>`;
+
+  const dl=document.getElementById('d-list');
+  if(data.drinkItems.length){
+    dl.innerHTML=data.drinkItems.map(d=>`<div class="di">
+      <div class="avatar avatar-sm">${makeAvatar(d.charId)}</div>
+      <div class="di-name">${d.name}</div>
+      <div class="di-amt">${d.sips}口</div>
+      <div>🍺</div>
+    </div>`).join('');
+  }else dl.innerHTML='<div style="text-align:center;opacity:.55;padding:8px">本局没人需要喝酒 🎉</div>';
+
+  // Leaderboard
+  const lb=document.getElementById('d-lb');
+  const sorted=[...data.players].sort((a,b)=>b.chips-a.chips);
+  lb.innerHTML=`<h3>筹码排行</h3>`+sorted.map((p,i)=>`<div class="lb-row">
+    <div class="lb-rank">${i+1}</div>
+    <div class="avatar avatar-sm">${makeAvatar(p.charId)}</div>
+    <div class="lb-n">${p.name}${p.chips===0?' <span style="color:#ff6b5b;font-size:.78em">出局</span>':''}</div>
+    <div class="lb-c">💰${p.chips}</div>
+    <div class="lb-d">🍺${p.drinks}口</div>
+  </div>`).join('');
+
+  // Buttons - host has next/end, clients see waiting
+  const btns=document.getElementById('d-btns');
+  if(MP.isHost){
+    btns.innerHTML=`<button class="btn btn-gold btn-lg" onclick="hostNextHand()">下一局 ▶</button><button class="btn btn-ghost" onclick="hostEndGame()" style="flex:0 0 auto;padding:13px 16px">结束</button>`;
+  }else{
+    btns.innerHTML=`<div class="waiting" style="width:100%">等待房主开始下一局<span class="dots">.</span></div>`;
+  }
+  showScreen('screen-drink');
+}
+
+function showFinal(players){
+  const sorted=[...players].sort((a,b)=>b.chips-a.chips);
+  document.getElementById('f-lb').innerHTML=`<div style="margin-bottom:16px;font-size:1.05em;opacity:.75">— 最终结果 —</div>`+sorted.map((p,i)=>{
+    const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':'　';
+    return`<div class="lb-row" style="padding:7px 0;font-size:.95em">
+      <div class="lb-rank">${m}</div>
+      <div class="avatar avatar-sm">${makeAvatar(p.charId)}</div>
+      <div class="lb-n">${p.name}</div>
+      <div class="lb-c">💰${p.chips}</div>
+      <div class="lb-d">🍺${p.drinks}口</div>
+    </div>`;
+  }).join('');
+  showScreen('screen-final');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════
+let msgT;
+function msg(t){const el=document.getElementById('msg');el.textContent=t;el.classList.add('show');clearTimeout(msgT);msgT=setTimeout(()=>el.classList.remove('show'),1800)}
+function msgClear(){const el=document.getElementById('msg');el.classList.remove('show');clearTimeout(msgT)}
+let toastT;
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800)}
+
+// Animate dots
+setInterval(()=>{document.querySelectorAll('.dots').forEach(el=>{const n=(el.textContent.length%3)+1;el.textContent='.'.repeat(n)})},500);
+</script>
+</body>
+</html>
