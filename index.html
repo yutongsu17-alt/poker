@@ -158,6 +158,21 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(192,57,43,.95);color:#fff;padding:10px 18px;border-radius:10px;font-size:.9em;z-index:999;opacity:0;transition:.3s;pointer-events:none}
 #toast.show{opacity:1}
 
+/* Voice toggle button */
+.voice-toggle{background:rgba(0,0,0,.45);border:1px solid rgba(240,192,64,.4);color:#f0c040;padding:5px 10px;border-radius:16px;cursor:pointer;font-size:1em;transition:.15s;line-height:1;font-family:inherit}
+.voice-toggle:hover{background:rgba(240,192,64,.15)}
+.voice-toggle.off{opacity:.5;color:#a89060}
+
+/* Speech bubble for character quotes */
+.pp{position:relative;overflow:visible}
+.speech-bubble{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);background:linear-gradient(135deg,#fff8e8,#f0e0c0);color:#3d1a1a;padding:7px 14px;border-radius:14px;font-size:.88em;font-weight:600;white-space:nowrap;max-width:260px;text-align:center;border:1.5px solid rgba(192,57,43,.4);box-shadow:0 4px 16px rgba(0,0,0,.6);z-index:50;pointer-events:none;font-family:'Noto Serif SC','Songti SC',serif;letter-spacing:1px;animation:bubbleIn .4s cubic-bezier(.34,1.56,.64,1)}
+.speech-bubble::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#f0e0c0;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+@keyframes bubbleIn{from{opacity:0;transform:translate(-50%,8px) scale(.85)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+
+/* Avatar pulse when speaking */
+.pp.speaking .avatar{animation:speakPulse 1s ease-in-out infinite}
+@keyframes speakPulse{0%,100%{box-shadow:0 0 0 0 rgba(240,192,64,.6)}50%{box-shadow:0 0 0 8px rgba(240,192,64,0)}}
+
 @media(max-width:480px){
   .title{font-size:1.9em;letter-spacing:3px}
   .players-grid{grid-template-columns:1fr}
@@ -260,7 +275,10 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
   <div class="game-hdr">
     <div class="hand-lbl" id="g-hand">第 1 局</div>
     <div class="pot-lbl">底池 <span id="g-pot">0</span></div>
-    <div class="phase-lbl" id="g-phase">发牌</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="voice-toggle" id="voice-btn" onclick="toggleVoice()" title="开关语音">🔊</button>
+      <div class="phase-lbl" id="g-phase">发牌</div>
+    </div>
   </div>
   <div class="phase-dots">
     <div class="pd" id="pd0"></div>
@@ -325,6 +343,100 @@ const CHARS=[
   {id:'jinxi',name:'槿汐',sub:'掌事姑姑',bg:'#3a5a5a',robe:'#7aaaa0',hair:'bun',acc:'simpleflower'},
   {id:'huanbi',name:'浣碧',sub:'婢女',bg:'#7a5a3a',robe:'#d8a878',hair:'doubleRing',acc:'flower'},
 ];
+
+// ════════════════════════════════════════════════════════════════
+//  QUOTES - 角色经典台词
+// ════════════════════════════════════════════════════════════════
+const QUOTES={
+  huangshang:{raise:["朕意已决","便如朕所愿","无人能撼朕意"],call:["朕陪你玩玩","且看下文"],check:["朕暂且观望"],fold:["此局不必再争","罢了"],allin:["朕倾尽天下，看你如何接招"],win:["天命所归","朕从未输过"]},
+  huanghou:{raise:["本宫倒要看看你有何能耐","皇后乃天下之主"],call:["本宫陪你"],check:["本宫看着便是"],fold:["臣妾乏了","罢了，本宫不与你争"],allin:["本宫这一辈子，从不退让"],win:["本宫早说过，会赢的人是我"]},
+  zhenhuan:{raise:["逆风如解意，容易莫摧残","嬛嬛奉陪到底"],call:["且陪诸位走这一程"],check:["嬛嬛暂且静观"],fold:["此局，妾身退下"],allin:["此生此世，再不愿做依附之人"],win:["终究还是嬛嬛赢了"]},
+  huafei:{raise:["贱人就是矫情！","赏你一丈红！"],call:["哼，本宫陪你玩"],check:["本宫看着便是"],fold:["本宫不想理你"],allin:["本宫倾尽家财，与你赌一回"],win:["哼，本宫从不会输"]},
+  meizhuang:{raise:["宁可枝头抱香死","妾身从不畏惧"],call:["妾身陪着"],check:["妾身且看"],fold:["此局作罢"],allin:["此身愿为知己者死"],win:["妾身侥幸"]},
+  lingrong:{raise:["姐姐，我也想试试"],call:["妾身陪着便是"],check:["妾身惶恐"],fold:["妾身不敢"],allin:["妾身也是有母家的人"],win:["想不到，妾身竟也能赢"]},
+  duanfei:{raise:["本宫年岁大了，陪你们玩玩"],call:["本宫陪你"],check:["本宫看着便是"],fold:["本宫累了"],allin:["反正本宫也无所谓了"],win:["有趣，真有趣"]},
+  jingfei:{raise:["本宫静观其变"],call:["本宫陪着"],check:["本宫不动声色"],fold:["不必了"],allin:["本宫赌这一把"],win:["运气罢了"]},
+  guojunwang:{raise:["心悦君兮","情不知所起，一往而深"],call:["我陪你"],check:["我静观便是"],fold:["山水有相逢"],allin:["此情可待成追忆"],win:["想必是缘分"]},
+  supeisheng:{raise:["嗻！皇上有旨"],call:["奴才依旨"],check:["奴才看着"],fold:["奴才告退"],allin:["奴才豁出去了"],win:["皇恩浩荡"]},
+  jinxi:{raise:["娘娘且小心"],call:["奴婢陪着娘娘"],check:["奴婢且看"],fold:["凡事忍让为先"],allin:["奴婢与娘娘同进同退"],win:["天佑我家娘娘"]},
+  huanbi:{raise:["我也想试一试"],call:["好"],check:["我看看"],fold:["不敢"],allin:["拼了！"],win:["想不到我也能赢"]},
+};
+
+function getQuote(charId,actType){
+  const arr=QUOTES[charId]&&QUOTES[charId][actType];
+  if(!arr||!arr.length)return null;
+  return arr[0|Math.random()*arr.length];
+}
+
+// ════════════════════════════════════════════════════════════════
+//  VOICE (Web Speech API)
+// ════════════════════════════════════════════════════════════════
+let VOICE_ENABLED=localStorage.getItem('voice')!=='0';
+let LAST_SPOKEN_TS=0;
+let ZH_VOICES=[];
+
+function loadVoices(){
+  if(!window.speechSynthesis)return;
+  const all=speechSynthesis.getVoices();
+  ZH_VOICES=all.filter(v=>v.lang&&(v.lang.startsWith('zh')||v.lang.startsWith('cmn')));
+}
+if(window.speechSynthesis){
+  loadVoices();
+  speechSynthesis.onvoiceschanged=loadVoices;
+}
+
+function pickVoiceForChar(charId){
+  if(!ZH_VOICES.length)return null;
+  const c=CHARS.find(x=>x.id===charId);
+  if(!c)return ZH_VOICES[0];
+  // Try to find a male voice for male chars, female for others
+  const wantMale=c.isM;
+  const matches=ZH_VOICES.filter(v=>{
+    const n=(v.name||'').toLowerCase();
+    if(wantMale)return /male|man|nan|ren|liang|kang/.test(n)&&!/female/.test(n);
+    return /female|woman|nu|ting|sin|xiao|yao/.test(n);
+  });
+  if(matches.length)return matches[0|Math.random()*matches.length];
+  return ZH_VOICES[0];
+}
+
+function speakQuote(text,charId){
+  if(!VOICE_ENABLED||!window.speechSynthesis||!text)return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='zh-CN';
+    u.rate=0.95;
+    const c=CHARS.find(x=>x.id===charId);
+    if(c){
+      if(c.isM){u.pitch=0.75;u.rate=0.9}
+      else if(c.isE){u.pitch=1.4;u.rate=1.0}
+      else{u.pitch=1.15;u.rate=0.95}
+    }
+    const v=pickVoiceForChar(charId);
+    if(v)u.voice=v;
+    u.volume=1.0;
+    speechSynthesis.speak(u);
+  }catch(e){console.warn('TTS error',e)}
+}
+
+function toggleVoice(){
+  VOICE_ENABLED=!VOICE_ENABLED;
+  localStorage.setItem('voice',VOICE_ENABLED?'1':'0');
+  const btn=document.getElementById('voice-btn');
+  if(btn){btn.textContent=VOICE_ENABLED?'🔊':'🔇';btn.classList.toggle('off',!VOICE_ENABLED)}
+  if(!VOICE_ENABLED&&window.speechSynthesis)speechSynthesis.cancel();
+  else{
+    // Test voice
+    const me=CHARS.find(c=>c.id===MP.myCharId);
+    if(me)speakQuote(`${me.name}在此`,me.id);
+  }
+}
+// Init button state on load
+window.addEventListener('DOMContentLoaded',()=>{
+  const btn=document.getElementById('voice-btn');
+  if(btn){btn.textContent=VOICE_ENABLED?'🔊':'🔇';btn.classList.toggle('off',!VOICE_ENABLED)}
+});
 
 function lighten(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.min(255,((c>>16)&255)+255*amt),g=Math.min(255,((c>>8)&255)+255*amt),b=Math.min(255,(c&255)+255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
 function darken(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.max(0,((c>>16)&255)-255*amt),g=Math.max(0,((c>>8)&255)-255*amt),b=Math.max(0,(c&255)-255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
@@ -847,6 +959,8 @@ function handleAction(act,amount){
     }
     p.totalBet+=add;G.pot+=add;p.bet=to;p.chips=0;p.allIn=true;
   }
+  // Record action with quote for broadcast
+  G.lastAction={pid:p.id,type:act,quote:getQuote(p.charId,act),ts:Date.now()};
   advance();
 }
 
@@ -997,6 +1111,7 @@ function makeGameView(){
       hasCards:p.cards&&p.cards.length>0,
       revealedCards:G.phase==='showdown'&&!p.folded?p.cards:null,
     })),
+    lastAction:G.lastAction||null,
   };
 }
 
@@ -1071,7 +1186,12 @@ function renderGameClient(){
     const st=stTxt?`<div class="pp-status${stCls}">${stTxt}</div>`:'';
     const dr=p.drinks?`<div class="pp-drinks">🍺 已喝 ${p.drinks} 口</div>`:'';
 
-    grid.innerHTML+=`<div class="${cls}">
+    // Speech bubble if this player just acted (within 5s window)
+    const showBubble=v.lastAction&&v.lastAction.pid===p.id&&v.lastAction.quote&&(Date.now()-v.lastAction.ts<5000);
+    const bubble=showBubble?`<div class="speech-bubble">${escHTML(v.lastAction.quote)}</div>`:'';
+
+    grid.innerHTML+=`<div class="${cls}" data-pid="${escAttr(p.id)}">
+      ${bubble}
       <div class="pp-top">
         <div class="avatar avatar-md">${makeAvatar(p.charId)}</div>
         <div class="pp-info">
@@ -1086,9 +1206,19 @@ function renderGameClient(){
     </div>`;
   });
 
+  // Speak quote once per new action
+  if(v.lastAction&&v.lastAction.quote&&v.lastAction.ts!==LAST_SPOKEN_TS){
+    LAST_SPOKEN_TS=v.lastAction.ts;
+    const actor=v.players.find(p=>p.id===v.lastAction.pid);
+    if(actor)speakQuote(v.lastAction.quote,actor.charId);
+  }
+
   // Action area
   renderMyActions();
 }
+
+function escHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escAttr(s){return String(s).replace(/"/g,'&quot;')}
 
 function nextFromView(v,startI,steps){
   let idx=startI,cnt=0;
@@ -1184,8 +1314,11 @@ function showDrinkUI(data){
   const wb=document.getElementById('d-win');
   const w0=data.winners[0];
   const wnames=data.winners.map(w=>w.name).join(' & ');
+  const wQuote=w0?getQuote(w0.charId,'win'):null;
   const wAvatar=w0?`<div class="avatar avatar-lg">${makeAvatar(w0.charId)}</div>`:'';
-  wb.innerHTML=`${wAvatar}<div style="text-align:left"><div style="opacity:.65;font-size:.85em">本局获胜</div><div class="wname">${wnames}</div>${data.hand?`<div class="whand">${data.hand.name}</div>`:''}${w0?`<div class="wgain">+${Math.max(0,w0.gain)} 筹码</div>`:''}</div>`;
+  wb.innerHTML=`${wAvatar}<div style="text-align:left"><div style="opacity:.65;font-size:.85em">本局获胜</div><div class="wname">${wnames}</div>${data.hand?`<div class="whand">${data.hand.name}</div>`:''}${w0?`<div class="wgain">+${Math.max(0,w0.gain)} 筹码</div>`:''}${wQuote?`<div style="margin-top:6px;font-style:italic;color:#f5e6c8;font-size:.92em">「${wQuote}」</div>`:''}</div>`;
+  // Speak winner's victory quote
+  if(w0&&wQuote)setTimeout(()=>speakQuote(wQuote,w0.charId),500);
 
   const dl=document.getElementById('d-list');
   if(data.drinkItems.length){
