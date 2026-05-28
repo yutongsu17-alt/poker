@@ -173,6 +173,58 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
 .pp.speaking .avatar{animation:speakPulse 1s ease-in-out infinite}
 @keyframes speakPulse{0%,100%{box-shadow:0 0 0 0 rgba(240,192,64,.6)}50%{box-shadow:0 0 0 8px rgba(240,192,64,0)}}
 
+/* ── ANIMATIONS: card deal, shake, all-in ── */
+.card-anim{animation:cardDeal .55s cubic-bezier(.22,1.2,.36,1) backwards;transform-origin:center;perspective:600px}
+@keyframes cardDeal{
+  0%{opacity:0;transform:translateY(-40px) rotateY(180deg) scale(.7)}
+  60%{opacity:1}
+  100%{opacity:1;transform:translateY(0) rotateY(0) scale(1)}
+}
+.shake{animation:shake .55s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{
+  10%,90%{transform:translateX(-2px)}
+  20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-8px)}
+  40%,60%{transform:translateX(8px)}
+}
+.flash{animation:flashHi .45s ease-out}
+@keyframes flashHi{0%{filter:brightness(1)}50%{filter:brightness(1.6)}100%{filter:brightness(1)}}
+
+/* ALL IN dramatic banner */
+#allin-flash{position:fixed;inset:0;pointer-events:none;z-index:998;opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(192,57,43,.45) 100%)}
+#allin-flash.show{animation:allinFlash 1.2s ease-out}
+@keyframes allinFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+.allin-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:5em;font-weight:900;color:#f0c040;text-shadow:0 0 24px rgba(240,192,64,.9),0 0 48px rgba(231,76,60,.7),3px 4px 6px rgba(0,0,0,.9);z-index:999;pointer-events:none;font-family:'Noto Serif SC','Songti SC',serif;letter-spacing:14px;white-space:nowrap}
+.allin-banner.show{animation:allinPop 1.6s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes allinPop{
+  0%{transform:translate(-50%,-50%) scale(0) rotate(-12deg);opacity:0}
+  25%{transform:translate(-50%,-50%) scale(1.25) rotate(2deg);opacity:1}
+  70%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(1.5) rotate(0);opacity:0}
+}
+
+/* Winner glow on showdown */
+.pp.win-glow{animation:winnerGlow 1.8s ease-in-out infinite}
+@keyframes winnerGlow{
+  0%,100%{box-shadow:0 0 12px rgba(240,192,64,.4),inset 0 0 8px rgba(240,192,64,.1)}
+  50%{box-shadow:0 0 28px rgba(240,192,64,.9),inset 0 0 18px rgba(240,192,64,.25)}
+}
+
+/* Action flash for player panel */
+.pp.act-flash{animation:actFlash .6s ease-out}
+@keyframes actFlash{0%{background-color:rgba(240,192,64,.3)}100%{background-color:transparent}}
+
+/* Pot pulse on increase */
+.pot-lbl.pulse{animation:potPulse .5s ease-out}
+@keyframes potPulse{0%{transform:scale(1)}50%{transform:scale(1.25);background:linear-gradient(135deg,rgba(240,192,64,.5),rgba(212,160,32,.35))}100%{transform:scale(1)}}
+
+/* Community card reveal stagger */
+.com-cards .card-anim:nth-child(1){animation-delay:0ms}
+.com-cards .card-anim:nth-child(2){animation-delay:220ms}
+.com-cards .card-anim:nth-child(3){animation-delay:440ms}
+.com-cards .card-anim:nth-child(4){animation-delay:660ms}
+.com-cards .card-anim:nth-child(5){animation-delay:880ms}
+
 @media(max-width:480px){
   .title{font-size:1.9em;letter-spacing:3px}
   .players-grid{grid-template-columns:1fr}
@@ -437,6 +489,57 @@ window.addEventListener('DOMContentLoaded',()=>{
   const btn=document.getElementById('voice-btn');
   if(btn){btn.textContent=VOICE_ENABLED?'🔊':'🔇';btn.classList.toggle('off',!VOICE_ENABLED)}
 });
+
+// ════════════════════════════════════════════════════════════════
+//  SOUND EFFECTS (procedural via Web Audio API — no files)
+// ════════════════════════════════════════════════════════════════
+let AC=null;
+function getAC(){
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}
+  if(AC.state==='suspended')AC.resume();
+  return AC;
+}
+// Unlock audio on first user interaction
+['click','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,()=>getAC(),{once:true,passive:true}));
+
+function sfxNoise(dur,fc,vol){
+  const ac=getAC();if(!ac||!VOICE_ENABLED)return;
+  const buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++){const t=i/ac.sampleRate;d[i]=(Math.random()*2-1)*Math.exp(-t*(1/dur)*4)*vol}
+  const s=ac.createBufferSource();s.buffer=buf;
+  const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=fc;f.Q.value=2;
+  s.connect(f);f.connect(ac.destination);s.start();
+}
+function sfxTone(freq,dur,vol,type='sine',sweep){
+  const ac=getAC();if(!ac||!VOICE_ENABLED)return;
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.value=freq;
+  if(sweep)o.frequency.exponentialRampToValueAtTime(sweep,ac.currentTime+dur);
+  g.gain.value=vol;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);
+  o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur+.05);
+}
+function sfxCardFlip(){sfxNoise(.16,2500,.35)}
+function sfxChip(){sfxTone(1800,.09,.18,'sine',900);setTimeout(()=>sfxTone(2200,.07,.12,'sine',1100),40)}
+function sfxCheck(){sfxTone(700,.08,.18,'sine')}
+function sfxFold(){sfxNoise(.22,500,.18)}
+function sfxBoom(){
+  const ac=getAC();if(!ac||!VOICE_ENABLED)return;
+  sfxTone(90,.55,.45,'sine',30);
+  setTimeout(()=>{sfxTone(1400,.3,.25,'triangle',600);sfxTone(1800,.25,.18,'sine',900)},80);
+  setTimeout(()=>sfxNoise(.4,400,.3),0);
+}
+function sfxWin(){
+  // Imperial ascending chime: C, E, G, C
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>sfxTone(f,.4,.22,'sine'),i*110));
+  // Resonant gong
+  setTimeout(()=>{sfxTone(220,.8,.3,'sine');sfxTone(440,.6,.18,'triangle')},0);
+}
+function sfxPot(){sfxTone(900,.1,.15,'square',1200);setTimeout(()=>sfxTone(1200,.08,.1,'square',1500),60)}
+function sfxDeal(){
+  // Soft swish + tap sequence (dealer dealing)
+  sfxNoise(.08,3000,.15);
+}
 
 function lighten(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.min(255,((c>>16)&255)+255*amt),g=Math.min(255,((c>>8)&255)+255*amt),b=Math.min(255,(c&255)+255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
 function darken(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.max(0,((c>>16)&255)-255*amt),g=Math.max(0,((c>>8)&255)-255*amt),b=Math.max(0,(c&255)-255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
@@ -977,18 +1080,21 @@ function nextPhase(){
   G.players.forEach(p=>{p.bet=0});G.curBet=0;
   const nf=G.players.filter(p=>!p.folded);
   if(nf.length<=1){return finishToShowdown()}
+  const wasFlop=G.phase==='preflop'; // 翻牌阶段需要更长动画时间
   if(G.phase==='preflop'){G.phase='flop';G.com=[G.deck.pop(),G.deck.pop(),G.deck.pop()]}
   else if(G.phase==='flop'){G.phase='turn';G.com.push(G.deck.pop())}
   else if(G.phase==='turn'){G.phase='river';G.com.push(G.deck.pop())}
   else if(G.phase==='river'){return finishToShowdown()}
 
   const canAct=nf.filter(p=>!p.allIn&&p.chips>0&&!p.disconnected);
-  broadcastGame();
+  // Single broadcast carries both new cards AND new actor — avoids re-render killing animation
   if(canAct.length<2){
+    broadcastGame();
+    const delay=wasFlop?1400:900; // wait for stagger anim
     setTimeout(()=>{
       if(G.phase==='river')finishToShowdown();
       else nextPhase();
-    },800);
+    },delay);
     return;
   }
   const firstI=nextFrom(G.dealer,1);
@@ -1010,7 +1116,10 @@ function finishToShowdown(){
   }
   G.pot=0;
   broadcastGame();
-  setTimeout(()=>{hostShowDrink(result)},1500);
+  // Give time for staggered card-flip reveal (up to 6 players × 350ms + flip anim)
+  const nfCount=G.players.filter(p=>!p.folded).length;
+  const revealTime=Math.max(1800,nfCount*400+800);
+  setTimeout(()=>{hostShowDrink(result)},revealTime);
 }
 
 function distributePot(){
@@ -1136,9 +1245,81 @@ function broadcastGame(){
 // ════════════════════════════════════════════════════════════════
 //  CLIENT GAME RENDER
 // ════════════════════════════════════════════════════════════════
+let PREV_SNAP=null;
+
+function withAnim(html,delayMs){
+  // Inject card-anim class + delay into a card html string
+  return html.replace(/class="card([^"]*)"/, `class="card$1 card-anim" style="animation-delay:${delayMs}ms"`);
+}
+
+function detectChanges(prev,curr){
+  if(!prev)return;
+  // ── new community card(s) ──
+  if(curr.com.length>prev.comLen){
+    const newCount=curr.com.length-prev.comLen;
+    for(let i=0;i<newCount;i++){
+      setTimeout(()=>sfxCardFlip(),i*220+60);
+    }
+  }
+  // ── new action ──
+  if(curr.lastAction&&curr.lastAction.ts!==prev.actTs){
+    const t=curr.lastAction.type;
+    const pid=curr.lastAction.pid;
+    // Flash actor panel
+    setTimeout(()=>{
+      const panel=document.querySelector(`.pp[data-pid="${CSS.escape(pid)}"]`);
+      if(panel){panel.classList.add('act-flash');setTimeout(()=>panel.classList.remove('act-flash'),600)}
+    },20);
+    if(t==='fold')sfxFold();
+    else if(t==='check')sfxCheck();
+    else if(t==='call'||t==='raise')sfxChip();
+    else if(t==='allin'){
+      sfxBoom();
+      showAllInBanner();
+      setTimeout(()=>{
+        const panel=document.querySelector(`.pp[data-pid="${CSS.escape(pid)}"]`);
+        if(panel){panel.classList.add('shake');setTimeout(()=>panel.classList.remove('shake'),550)}
+      },50);
+    }
+  }
+  // ── pot increase ──
+  if(curr.pot>prev.pot){
+    const potEl=document.querySelector('.pot-lbl');
+    if(potEl){potEl.classList.add('pulse');setTimeout(()=>potEl.classList.remove('pulse'),500)}
+  }
+  // ── enter showdown ──
+  if(curr.phase==='showdown'&&prev.phase!=='showdown'){
+    setTimeout(()=>sfxWin(),550);
+  }
+  // ── new hand started ──
+  if(curr.handNum>prev.handNum){
+    setTimeout(()=>sfxDeal(),0);
+    setTimeout(()=>sfxDeal(),140);
+  }
+}
+
+function showAllInBanner(){
+  // Banner
+  const b=document.createElement('div');
+  b.className='allin-banner show';
+  b.textContent='ALL IN';
+  document.body.appendChild(b);
+  setTimeout(()=>b.remove(),1700);
+  // Flash
+  const f=document.createElement('div');
+  f.id='allin-flash';f.className='show';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(),1300);
+}
+
 function renderGameClient(){
   if(!PUBLIC_VIEW)return;
   const v=PUBLIC_VIEW;
+  const prev=PREV_SNAP;
+
+  // Trigger sounds/effects from diff (before re-render)
+  detectChanges(prev,v);
+
   document.getElementById('g-hand').textContent=`第 ${v.handNum} 局`;
   document.getElementById('g-pot').textContent=v.pot;
   document.getElementById('g-phase').textContent=PNAMES[v.phase]||'';
@@ -1146,8 +1327,22 @@ function renderGameClient(){
   const pi=PHASES.indexOf(v.phase);
   for(let i=0;i<5;i++){const d=document.getElementById(`pd${i}`);d.className='pd'+(i<pi?' done':i===pi?' now':'')}
 
+  // Community cards — animate ONLY the newly-revealed ones
+  const prevComLen=prev?prev.comLen:0;
   const cc=document.getElementById('g-com');cc.innerHTML='';
-  for(let i=0;i<5;i++)cc.innerHTML+=i<v.com.length?cardHTML(v.com[i]):'<div class="card-ph"></div>';
+  for(let i=0;i<5;i++){
+    if(i<v.com.length){
+      const isNew=i>=prevComLen;
+      if(isNew){
+        const delay=(i-prevComLen)*220;
+        cc.innerHTML+=withAnim(cardHTML(v.com[i]),delay);
+      }else{
+        cc.innerHTML+=cardHTML(v.com[i]);
+      }
+    }else{
+      cc.innerHTML+='<div class="card-ph"></div>';
+    }
+  }
 
   const sbI=nextFromView(v,v.dealer,1);
   const bbI=nextFromView(v,v.dealer,2);
@@ -1163,6 +1358,10 @@ function renderGameClient(){
   const meIdx=sorted.findIndex(p=>p.id===MP.myId);
   if(meIdx>0){sorted.unshift(...sorted.splice(meIdx,1))}
 
+  // Detect showdown reveal transition for staggered card flips
+  const justShowdown=v.phase==='showdown'&&(!prev||prev.phase!=='showdown');
+  let revealIdx=0;
+
   sorted.forEach(p=>{
     const c=CHARS.find(x=>x.id===p.charId);
     const isMe=p.id===MP.myId;
@@ -1176,7 +1375,18 @@ function renderGameClient(){
     const meTag=isMe?`<span class="me-tag">我</span>`:'';
     let cards='';
     if(p.hasCards){
-      if(p.revealedCards)cards=p.revealedCards.map(card=>cardHTML(card)).join('');
+      if(p.revealedCards){
+        // On showdown transition, stagger reveal per player
+        if(justShowdown){
+          const baseDelay=revealIdx*350;
+          cards=p.revealedCards.map((card,i)=>withAnim(cardHTML(card),baseDelay+i*120)).join('');
+          // Play card flip sound for each revealed pair
+          setTimeout(()=>sfxCardFlip(),baseDelay+50);
+          revealIdx++;
+        }else{
+          cards=p.revealedCards.map(card=>cardHTML(card)).join('');
+        }
+      }
       else if(isMe&&MP.myCards.length)cards=MP.myCards.map(card=>cardHTML(card)).join('');
       else if(!p.folded)cards=`<div class="card down"></div><div class="card down"></div>`;
     }
@@ -1215,6 +1425,15 @@ function renderGameClient(){
 
   // Action area
   renderMyActions();
+
+  // Save snapshot for next diff
+  PREV_SNAP={
+    comLen:v.com.length,
+    phase:v.phase,
+    pot:v.pot,
+    handNum:v.handNum,
+    actTs:v.lastAction?v.lastAction.ts:0,
+  };
 }
 
 function escHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
