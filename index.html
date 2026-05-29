@@ -283,6 +283,89 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
   .emoji-btn{font-size:1.3em}
 }
 
+/* ── BET QUICK PRESETS ── */
+.bet-presets{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.bet-preset{background:rgba(240,192,64,.18);border:1px solid rgba(240,192,64,.45);color:#f0c040;padding:7px 11px;border-radius:8px;cursor:pointer;font-size:.85em;font-weight:600;transition:.12s;font-family:inherit;min-width:54px}
+.bet-preset:hover{background:rgba(240,192,64,.35);transform:translateY(-1px)}
+.bet-preset:active{transform:translateY(0)}
+.bet-preset:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.bet-preset.active{background:#f0c040;color:#3d1a1a}
+.raise-row input{width:90px;padding:9px;text-align:center;font-size:1em;font-weight:700}
+
+/* ── CONFIRMATION MODAL ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:modalFade .2s ease-out}
+@keyframes modalFade{from{opacity:0}to{opacity:1}}
+.modal-card{background:linear-gradient(135deg,#3d1a1a,#1a0808);border:2px solid rgba(240,192,64,.5);border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.7);animation:modalPop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes modalPop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-title{color:#f0c040;font-size:1.4em;font-weight:700;margin-bottom:8px;letter-spacing:2px;font-family:'Noto Serif SC',serif}
+.modal-msg{color:#f5e6c8;margin-bottom:18px;line-height:1.5;font-size:.95em}
+.modal-msg b{color:#ff6b5b}
+.modal-btns{display:flex;gap:10px}
+.modal-btns .btn{flex:1;padding:12px;font-size:1em}
+
+/* ── YOUR TURN STRONG INDICATOR ── */
+#turn-banner{position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#f0c040,#e74c3c,#f0c040);color:#3d1a1a;text-align:center;padding:8px;font-weight:700;letter-spacing:6px;font-size:1.05em;z-index:50;transform:translateY(-100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 16px rgba(0,0,0,.5);background-size:200% 100%;animation:turnBannerShimmer 2s linear infinite;font-family:'Noto Serif SC',serif}
+#turn-banner.show{transform:translateY(0)}
+@keyframes turnBannerShimmer{0%{background-position:0% 0}100%{background-position:200% 0}}
+.pp.cur{box-shadow:0 0 0 3px rgba(240,192,64,.65),0 0 24px rgba(240,192,64,.5);animation:curPulse 1.4s ease-in-out infinite}
+@keyframes curPulse{0%,100%{box-shadow:0 0 0 3px rgba(240,192,64,.5),0 0 16px rgba(240,192,64,.4)}50%{box-shadow:0 0 0 3px rgba(240,192,64,.85),0 0 32px rgba(240,192,64,.75)}}
+
+/* ── ACTION HISTORY LOG ── */
+.history-log{background:rgba(0,0,0,.4);border-radius:10px;padding:6px 10px;margin-bottom:8px;max-width:760px;width:100%;font-size:.78em;color:#f5e6c8;opacity:.7;max-height:50px;overflow-y:auto;border:1px solid rgba(240,192,64,.12)}
+.history-log:empty{display:none}
+.history-line{padding:2px 0;border-bottom:1px solid rgba(240,192,64,.06);line-height:1.4}
+.history-line:last-child{border-bottom:none}
+.history-line b{color:#f0c040}
+.history-line .h-fold{color:#a89060}
+.history-line .h-raise{color:#5dde88}
+.history-line .h-allin{color:#ff6b5b;font-weight:700}
+
+/* ── BIGGER MY CARDS ── */
+.act-mycards{display:flex;gap:10px;justify-content:center;align-items:center;margin-bottom:12px;padding:12px 8px;background:rgba(240,192,64,.06);border-radius:12px;border:1px solid rgba(240,192,64,.18)}
+.act-mycards .my-card-label{color:#f0c040;font-size:.85em;font-weight:600;opacity:.9;letter-spacing:1px}
+.act-mycards .card{width:60px;height:84px;box-shadow:0 4px 12px rgba(0,0,0,.6)}
+.act-mycards .card .cr{font-size:1.15em}
+.act-mycards .card .cs{font-size:1.4em}
+
+/* ── SETTINGS PANEL ── */
+.settings-panel{position:fixed;top:50px;right:12px;background:linear-gradient(135deg,#3d1a1a,#1a0808);border:1px solid rgba(240,192,64,.5);border-radius:12px;padding:14px;z-index:120;box-shadow:0 8px 28px rgba(0,0,0,.7);min-width:220px;animation:pickerIn .2s cubic-bezier(.34,1.56,.64,1)}
+.settings-row-x{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:.88em}
+.settings-row-x:last-child{margin-bottom:0}
+.settings-row-x label{flex:1;color:#f5e6c8}
+.settings-row-x button.toggle{background:rgba(240,192,64,.2);border:1px solid rgba(240,192,64,.5);color:#f0c040;padding:4px 10px;border-radius:14px;cursor:pointer;font-size:.85em;min-width:48px}
+.settings-row-x button.toggle.on{background:#f0c040;color:#3d1a1a;font-weight:700}
+.settings-row-x input[type=range]{flex:1;accent-color:#f0c040}
+
+/* ── ACTION AREA: stronger mobile presence ── */
+.act-btns .btn{padding:13px 20px;font-size:1em;min-width:72px}
+@media(max-width:600px){
+  .act-btns{gap:6px}
+  .act-btns .btn{padding:12px 12px;font-size:.95em;flex:1 1 calc(33% - 6px);min-width:0}
+  .act-mycards .card{width:54px;height:76px}
+  /* Sticky action area on mobile so it always reachable */
+  .action-wrap{position:sticky;bottom:0;z-index:5;box-shadow:0 -6px 20px rgba(0,0,0,.5)}
+  /* Smaller player panel on mobile */
+  .players-grid{gap:6px}
+  .pp{padding:8px}
+  .pp-top{gap:6px;margin-bottom:4px}
+  .avatar-md{width:42px;height:42px}
+  /* Slightly larger hand-readable elements */
+  .pot-lbl{font-size:1.15em;padding:7px 18px}
+  .turn-banner{font-size:.95em;letter-spacing:4px}
+  #turn-banner{padding:6px;font-size:.92em;letter-spacing:4px}
+}
+
+/* ── PRESET ROW WRAPPED LAYOUT ── */
+.raise-row{flex-direction:column;align-items:stretch}
+.raise-row-x{display:flex;gap:7px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%}
+
+/* Vibration animation feedback for "your turn" */
+.turn-flash{animation:turnFlash .8s ease-out}
+@keyframes turnFlash{
+  0%{background-color:rgba(240,192,64,.4)}
+  100%{background-color:transparent}
+}
+
 @media(max-width:480px){
   .title{font-size:1.9em;letter-spacing:3px}
   .players-grid{grid-template-columns:1fr}
@@ -298,6 +381,9 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
 <body>
 <div id="msg"></div>
 <div id="toast"></div>
+<div id="turn-banner">🔔 轮 到 您 了</div>
+<div id="modal-mount"></div>
+<div id="settings-mount"></div>
 
 <!-- ENTRY -->
 <div class="screen active" id="screen-entry">
@@ -386,7 +472,7 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
     <div class="hand-lbl" id="g-hand">第 1 局</div>
     <div class="pot-lbl">底池 <span id="g-pot">0</span></div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="voice-toggle" id="voice-btn" onclick="toggleVoice()" title="开关语音">🔊</button>
+      <button class="voice-toggle" id="settings-btn" onclick="toggleSettings()" title="设置">⚙️</button>
       <div class="phase-lbl" id="g-phase">发牌</div>
     </div>
   </div>
@@ -397,6 +483,7 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
     <div class="pd" id="pd3"></div>
     <div class="pd" id="pd4"></div>
   </div>
+  <div class="history-log" id="g-history"></div>
   <div class="community-wrap">
     <div class="com-lbl">公 共 牌</div>
     <div class="com-cards" id="g-com"></div>
@@ -407,9 +494,12 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
     <div class="act-title" id="g-act-title">等待中...</div>
     <div class="act-btns" id="g-act-btns"></div>
     <div class="raise-row" id="g-raise" style="display:none">
-      <input type="number" id="raise-val" placeholder="加注到">
-      <button class="btn btn-blue" onclick="actRaise()">确认</button>
-      <button class="btn btn-ghost" onclick="toggleRaise(false)">取消</button>
+      <div class="bet-presets" id="bet-presets"></div>
+      <div class="raise-row-x">
+        <input type="number" id="raise-val" placeholder="加注到">
+        <button class="btn btn-blue" onclick="actRaise()">确认加注</button>
+        <button class="btn btn-ghost" onclick="toggleRaise(false)">取消</button>
+      </div>
     </div>
   </div>
 </div>
@@ -482,6 +572,9 @@ function getQuote(charId,actType){
 //  VOICE (Web Speech API)
 // ════════════════════════════════════════════════════════════════
 let VOICE_ENABLED=localStorage.getItem('voice')!=='0';
+let SFX_ENABLED=localStorage.getItem('sfx')!=='0';
+let VIBRATE_ENABLED=localStorage.getItem('vibrate')!=='0';
+let SFX_VOLUME=parseFloat(localStorage.getItem('sfxvol')||'1');
 let LAST_SPOKEN_TS=0;
 let ZH_VOICES=[];
 
@@ -533,19 +626,60 @@ function speakQuote(text,charId){
 function toggleVoice(){
   VOICE_ENABLED=!VOICE_ENABLED;
   localStorage.setItem('voice',VOICE_ENABLED?'1':'0');
-  const btn=document.getElementById('voice-btn');
-  if(btn){btn.textContent=VOICE_ENABLED?'🔊':'🔇';btn.classList.toggle('off',!VOICE_ENABLED)}
   if(!VOICE_ENABLED&&window.speechSynthesis)speechSynthesis.cancel();
-  else{
-    // Test voice
-    const me=CHARS.find(c=>c.id===MP.myCharId);
-    if(me)speakQuote(`${me.name}在此`,me.id);
-  }
+  renderSettings();
 }
-// Init button state on load
-window.addEventListener('DOMContentLoaded',()=>{
-  const btn=document.getElementById('voice-btn');
-  if(btn){btn.textContent=VOICE_ENABLED?'🔊':'🔇';btn.classList.toggle('off',!VOICE_ENABLED)}
+function toggleSfx(){
+  SFX_ENABLED=!SFX_ENABLED;
+  localStorage.setItem('sfx',SFX_ENABLED?'1':'0');
+  if(SFX_ENABLED)sfxClick();
+  renderSettings();
+}
+function toggleVibrate(){
+  VIBRATE_ENABLED=!VIBRATE_ENABLED;
+  localStorage.setItem('vibrate',VIBRATE_ENABLED?'1':'0');
+  if(VIBRATE_ENABLED&&navigator.vibrate)navigator.vibrate(50);
+  renderSettings();
+}
+function setSfxVolume(v){
+  SFX_VOLUME=v;
+  localStorage.setItem('sfxvol',String(v));
+}
+
+let settingsOpen=false;
+function toggleSettings(){
+  settingsOpen=!settingsOpen;
+  renderSettings();
+}
+function renderSettings(){
+  const mount=document.getElementById('settings-mount');
+  if(!mount)return;
+  if(!settingsOpen){mount.innerHTML='';return}
+  mount.innerHTML=`<div class="settings-panel" onclick="event.stopPropagation()">
+    <div class="settings-row-x">
+      <label>🔊 音效</label>
+      <button class="toggle ${SFX_ENABLED?'on':''}" onclick="toggleSfx()">${SFX_ENABLED?'开':'关'}</button>
+    </div>
+    <div class="settings-row-x">
+      <label>音量</label>
+      <input type="range" min="0" max="1" step="0.1" value="${SFX_VOLUME}" oninput="setSfxVolume(parseFloat(this.value))">
+    </div>
+    <div class="settings-row-x">
+      <label>🗣️ 角色语音</label>
+      <button class="toggle ${VOICE_ENABLED?'on':''}" onclick="toggleVoice()">${VOICE_ENABLED?'开':'关'}</button>
+    </div>
+    <div class="settings-row-x">
+      <label>📳 振动提示</label>
+      <button class="toggle ${VIBRATE_ENABLED?'on':''}" onclick="toggleVibrate()">${VIBRATE_ENABLED?'开':'关'}</button>
+    </div>
+    <div style="font-size:.72em;opacity:.5;margin-top:10px;line-height:1.4">提示：角色语音是浏览器自带 TTS，比较生硬，建议关掉，留音效就够了。</div>
+  </div>`;
+}
+// Close settings on outside click
+document.addEventListener('click',e=>{
+  if(settingsOpen&&!e.target.closest('.settings-panel')&&!e.target.closest('#settings-btn')){
+    settingsOpen=false;renderSettings();
+  }
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -561,20 +695,20 @@ function getAC(){
 ['click','touchstart','keydown'].forEach(ev=>window.addEventListener(ev,()=>getAC(),{once:true,passive:true}));
 
 function sfxNoise(dur,fc,vol){
-  const ac=getAC();if(!ac||!VOICE_ENABLED)return;
+  const ac=getAC();if(!ac||!SFX_ENABLED)return;
   const buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);
   const d=buf.getChannelData(0);
-  for(let i=0;i<d.length;i++){const t=i/ac.sampleRate;d[i]=(Math.random()*2-1)*Math.exp(-t*(1/dur)*4)*vol}
+  for(let i=0;i<d.length;i++){const t=i/ac.sampleRate;d[i]=(Math.random()*2-1)*Math.exp(-t*(1/dur)*4)*vol*SFX_VOLUME}
   const s=ac.createBufferSource();s.buffer=buf;
   const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=fc;f.Q.value=2;
   s.connect(f);f.connect(ac.destination);s.start();
 }
 function sfxTone(freq,dur,vol,type='sine',sweep){
-  const ac=getAC();if(!ac||!VOICE_ENABLED)return;
+  const ac=getAC();if(!ac||!SFX_ENABLED)return;
   const o=ac.createOscillator(),g=ac.createGain();
   o.type=type;o.frequency.value=freq;
   if(sweep)o.frequency.exponentialRampToValueAtTime(sweep,ac.currentTime+dur);
-  g.gain.value=vol;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);
+  g.gain.value=vol*SFX_VOLUME;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);
   o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur+.05);
 }
 function sfxCardFlip(){sfxNoise(.16,2500,.35)}
@@ -1580,7 +1714,66 @@ function withAnim(html,delayMs){
   return html.replace(/class="card([^"]*)"/, `class="card$1 card-anim" style="animation-delay:${delayMs}ms"`);
 }
 
+// Persistent history log (last 8 actions)
+let HISTORY_LOG=[];
+const HISTORY_MAX=8;
+
+function pushHistory(curr,actionType,actorName,extra){
+  let typeLabel='';
+  let cls='';
+  if(actionType==='fold'){typeLabel='弃牌';cls='h-fold'}
+  else if(actionType==='check'){typeLabel='过牌'}
+  else if(actionType==='call'){typeLabel=`跟注 ${extra||''}`}
+  else if(actionType==='raise'){typeLabel=`加注至 ${extra||''}`;cls='h-raise'}
+  else if(actionType==='allin'){typeLabel=`全压 ${extra||''}`;cls='h-allin'}
+  HISTORY_LOG.push(`<span class="history-line"><b>第${curr.handNum}局·${PNAMES[curr.phase]||''}</b> · ${actorName} <span class="${cls}">${typeLabel}</span></span>`);
+  while(HISTORY_LOG.length>HISTORY_MAX)HISTORY_LOG.shift();
+  renderHistory();
+}
+function pushSysHistory(text){
+  HISTORY_LOG.push(`<span class="history-line"><b style="color:#9aa;">系统</b> · ${text}</span>`);
+  while(HISTORY_LOG.length>HISTORY_MAX)HISTORY_LOG.shift();
+  renderHistory();
+}
+function renderHistory(){
+  const el=document.getElementById('g-history');
+  if(!el)return;
+  el.innerHTML=HISTORY_LOG.join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+// Detect "my turn just started" (transition false → true)
+let WAS_MY_TURN=false;
+function checkMyTurnTransition(curr){
+  if(!curr||!curr.players)return;
+  const actor=curr.players[curr.curIdx];
+  if(!actor){WAS_MY_TURN=false;return}
+  const isMyTurn=actor.id===MP.myId&&!actor.folded&&!actor.allIn&&curr.phase!=='showdown';
+  if(isMyTurn&&!WAS_MY_TURN)triggerMyTurnAlert();
+  WAS_MY_TURN=isMyTurn;
+}
+function triggerMyTurnAlert(){
+  // Banner
+  const b=document.getElementById('turn-banner');
+  if(b){
+    b.classList.add('show');
+    setTimeout(()=>b.classList.remove('show'),1700);
+  }
+  // Vibration
+  if(VIBRATE_ENABLED&&navigator.vibrate){
+    try{navigator.vibrate([60,50,120])}catch(e){}
+  }
+  // Sound cue (distinct from chip)
+  sfxTone(880,.18,.22,'sine',1100);
+  setTimeout(()=>sfxTone(1100,.14,.18,'sine',1320),130);
+  // Background flash
+  document.body.classList.add('turn-flash');
+  setTimeout(()=>document.body.classList.remove('turn-flash'),800);
+}
+
 function detectChanges(prev,curr){
+  // Always check turn transition
+  checkMyTurnTransition(curr);
   if(!prev)return;
   // ── new community card(s) ──
   if(curr.com.length>prev.comLen){
@@ -1593,6 +1786,7 @@ function detectChanges(prev,curr){
   if(curr.lastAction&&curr.lastAction.ts!==prev.actTs){
     const t=curr.lastAction.type;
     const pid=curr.lastAction.pid;
+    const actor=curr.players.find(p=>p.id===pid);
     // Flash actor panel
     setTimeout(()=>{
       const panel=document.querySelector(`.pp[data-pid="${CSS.escape(pid)}"]`);
@@ -1609,6 +1803,13 @@ function detectChanges(prev,curr){
         if(panel){panel.classList.add('shake');setTimeout(()=>panel.classList.remove('shake'),550)}
       },50);
     }
+    // Push to history
+    if(actor){
+      let extra='';
+      if(t==='raise'||t==='allin')extra=actor.bet||'';
+      else if(t==='call')extra=Math.max(0,actor.bet-(prev.lastBet||0))||actor.bet;
+      pushHistory(curr,t,actor.name,extra);
+    }
   }
   // ── pot increase ──
   if(curr.pot>prev.pot){
@@ -1618,11 +1819,14 @@ function detectChanges(prev,curr){
   // ── enter showdown ──
   if(curr.phase==='showdown'&&prev.phase!=='showdown'){
     setTimeout(()=>sfxWin(),550);
+    pushSysHistory(`摊牌！`);
   }
   // ── new hand started ──
   if(curr.handNum>prev.handNum){
     setTimeout(()=>sfxDeal(),0);
     setTimeout(()=>sfxDeal(),140);
+    HISTORY_LOG=[];
+    pushSysHistory(`第 ${curr.handNum} 局开始`);
   }
 }
 
@@ -1818,7 +2022,7 @@ function renderMyActions(){
   const me=v.players.find(p=>p.id===MP.myId);
   const mc=document.getElementById('g-mycards');
   if(me&&MP.myCards&&MP.myCards.length&&!me.folded){
-    mc.innerHTML=`<div style="opacity:.6;font-size:.78em;margin-right:8px;align-self:center">您的底牌</div>`+MP.myCards.map(c=>cardHTML(c)).join('');
+    mc.innerHTML=`<div class="my-card-label">您 的 底 牌</div>`+MP.myCards.map(c=>cardHTML(c)).join('');
   }else mc.innerHTML='';
 
   const title=document.getElementById('g-act-title');
@@ -1845,24 +2049,54 @@ function renderMyActions(){
     return;
   }
 
-  title.innerHTML=`轮到 <strong>${me.name}</strong> 行动`;
+  title.innerHTML=`<span style="color:#f0c040">⚡ 轮到您 <strong>${me.name}</strong> 出牌</span>`;
   const canCheck=v.curBet===me.bet;
   const callAmt=Math.min(v.curBet-me.bet,me.chips);
 
-  btns.innerHTML+=`<button class="btn btn-red" onclick="actSend('fold')">弃牌</button>`;
-  if(canCheck)btns.innerHTML+=`<button class="btn btn-green" onclick="actSend('check')">过牌 ✓</button>`;
+  btns.innerHTML+=`<button class="btn btn-red" onclick="actSend('fold')">🃏 弃牌</button>`;
+  if(canCheck)btns.innerHTML+=`<button class="btn btn-green" onclick="actSend('check')">✓ 过牌</button>`;
   else btns.innerHTML+=`<button class="btn btn-blue" onclick="actSend('call')">跟注 ${callAmt}</button>`;
   if(me.chips>callAmt){
     btns.innerHTML+=`<button class="btn btn-gold" onclick="toggleRaise(true)">加注 ↑</button>`;
-    btns.innerHTML+=`<button class="btn btn-ghost" onclick="actSend('allin')">ALL IN</button>`;
+    btns.innerHTML+=`<button class="btn btn-ghost" onclick="confirmAllIn()">ALL IN ⚡</button>`;
   }
 }
+
+function confirmAllIn(){
+  const me=PUBLIC_VIEW.players.find(p=>p.id===MP.myId);
+  if(!me)return;
+  const total=me.chips+me.bet;
+  showModal({
+    title:'确认全压？',
+    msg:`您将押上全部 <b>${me.chips} 筹码</b>（总下注 ${total}）。<br>输了可是要喝满杯的哦。`,
+    confirmText:'豁出去了！',
+    confirmClass:'btn-red',
+    onConfirm:()=>actSend('allin'),
+  });
+}
+
+function showModal({title,msg,confirmText='确认',confirmClass='btn-gold',onConfirm,cancelText='取消'}){
+  const m=document.getElementById('modal-mount');
+  m.innerHTML=`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="modal-card">
+      <div class="modal-title">${title}</div>
+      <div class="modal-msg">${msg}</div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost" onclick="closeModal()">${cancelText}</button>
+        <button class="btn ${confirmClass}" id="modal-confirm-btn">${confirmText}</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('modal-confirm-btn').onclick=()=>{closeModal();if(onConfirm)onConfirm()};
+}
+function closeModal(){const m=document.getElementById('modal-mount');if(m)m.innerHTML=''}
 
 function toggleRaise(show){
   const r=document.getElementById('g-raise');
   if(show===undefined)show=r.style.display==='none';
   r.style.display=show?'flex':'none';
   if(show){
+    renderRaisePresets();
     const v=PUBLIC_VIEW;
     const me=v.players.find(p=>p.id===MP.myId);
     const minTo=v.curBet+v.bb;
@@ -1872,7 +2106,40 @@ function toggleRaise(show){
   }
 }
 
+function renderRaisePresets(){
+  const v=PUBLIC_VIEW;
+  const me=v.players.find(p=>p.id===MP.myId);
+  if(!me)return;
+  const minTo=v.curBet+v.bb;
+  const maxTo=me.chips+me.bet;
+  // Compute presets relative to pot
+  const pot=v.pot;
+  const presets=[
+    {label:'最小',amt:minTo},
+    {label:'½ 底池',amt:Math.max(minTo,Math.round(v.curBet+pot*0.5))},
+    {label:'底池',amt:Math.max(minTo,Math.round(v.curBet+pot))},
+    {label:'2x 底池',amt:Math.max(minTo,Math.round(v.curBet+pot*2))},
+    {label:'全压',amt:maxTo},
+  ];
+  const presetEl=document.getElementById('bet-presets');
+  if(presetEl){
+    presetEl.innerHTML=presets.map(p=>{
+      const dis=p.amt>maxTo||p.amt<minTo;
+      const clamped=Math.min(maxTo,Math.max(minTo,p.amt));
+      return `<button class="bet-preset" ${dis?'disabled':''} onclick="setRaiseAmount(${clamped})">${p.label}<br><span style="font-size:.78em;opacity:.85">${clamped}</span></button>`;
+    }).join('');
+  }
+}
+function setRaiseAmount(n){
+  const rv=document.getElementById('raise-val');
+  if(rv)rv.value=n;
+  // Highlight selected preset
+  document.querySelectorAll('.bet-preset').forEach(b=>b.classList.remove('active'));
+  if(event&&event.currentTarget)event.currentTarget.classList.add('active');
+}
+
 function actSend(act,amount){
+  sfxClick();
   if(MP.isHost){
     handleAction(act,amount);
   }else{
