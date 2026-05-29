@@ -973,49 +973,510 @@ function getCrownPid(players){
 function lighten(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.min(255,((c>>16)&255)+255*amt),g=Math.min(255,((c>>8)&255)+255*amt),b=Math.min(255,(c&255)+255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
 function darken(hex,amt){const c=parseInt(hex.slice(1),16);const r=Math.max(0,((c>>16)&255)-255*amt),g=Math.max(0,((c>>8)&255)-255*amt),b=Math.max(0,(c&255)-255*amt);return'#'+[r,g,b].map(x=>(x|0).toString(16).padStart(2,'0')).join('')}
 
-// ── HAIR ──
-function hairBun(){return`<ellipse cx="60" cy="28" rx="20" ry="13" fill="#1a0e08"/><path d="M 38,45 Q 32,60 36,82 L 44,82 Q 41,60 46,46 Z" fill="#1a0e08"/><path d="M 82,45 Q 88,60 84,82 L 76,82 Q 79,60 74,46 Z" fill="#1a0e08"/><path d="M 38,46 Q 60,30 82,46 L 82,42 Q 60,28 38,42 Z" fill="#1a0e08"/>`}
-function hairDoubleRing(){return`<circle cx="32" cy="32" r="10" fill="#1a0e08"/><circle cx="88" cy="32" r="10" fill="#1a0e08"/><path d="M 40,40 Q 60,32 80,40 L 80,48 Q 60,42 40,48 Z" fill="#1a0e08"/><path d="M 40,48 Q 38,60 42,72 L 46,72 Q 43,60 46,48 Z" fill="#1a0e08"/><path d="M 80,48 Q 82,60 78,72 L 74,72 Q 77,60 74,48 Z" fill="#1a0e08"/>`}
-function hairMaleBun(){return`<ellipse cx="60" cy="32" rx="7" ry="9" fill="#1a0e08"/><path d="M 38,45 Q 33,58 38,72 L 44,72 Q 41,58 46,45 Z" fill="#1a0e08"/><path d="M 82,45 Q 87,58 82,72 L 76,72 Q 79,58 74,45 Z" fill="#1a0e08"/><path d="M 38,45 Q 60,35 82,45 L 82,40 Q 60,32 38,40 Z" fill="#1a0e08"/>`}
-function hairEunuch(){return`<path d="M 40,52 Q 35,65 40,78 L 46,78 Q 43,65 47,52 Z" fill="#1a0e08"/><path d="M 80,52 Q 85,65 80,78 L 74,78 Q 77,65 73,52 Z" fill="#1a0e08"/>`}
-function hairCrownM(){return`<path d="M 40,50 Q 35,60 38,72 L 44,72 Q 41,60 45,50 Z" fill="#1a0e08"/><path d="M 80,50 Q 85,60 82,72 L 76,72 Q 79,60 75,50 Z" fill="#1a0e08"/>`}
+// ── HAIR (much more refined with gradients & layered detail) ──
+function hairBun(id){return`
+  <!-- Back hair behind face -->
+  <path d="M 34,42 Q 28,58 32,84 L 44,84 Q 40,62 44,46 Z" fill="url(#hair_${id})"/>
+  <path d="M 86,42 Q 92,58 88,84 L 76,84 Q 80,62 76,46 Z" fill="url(#hair_${id})"/>
+  <!-- Hair top covering -->
+  <path d="M 36,44 Q 60,28 84,44 L 82,38 Q 60,24 38,38 Z" fill="url(#hair_${id})"/>
+  <!-- Hair strand details (highlights) -->
+  <path d="M 38,40 Q 45,34 52,40" stroke="#5a3020" stroke-width=".5" fill="none" opacity=".6"/>
+  <path d="M 68,40 Q 75,34 82,40" stroke="#5a3020" stroke-width=".5" fill="none" opacity=".6"/>
+  <!-- High bun -->
+  <ellipse cx="60" cy="26" rx="20" ry="13" fill="url(#hair_${id})"/>
+  <ellipse cx="60" cy="22" rx="13" ry="7" fill="url(#hairhi_${id})"/>
+  <ellipse cx="58" cy="20" rx="5" ry="2" fill="#fff" opacity=".15"/>
+  <!-- Bun base ring -->
+  <ellipse cx="60" cy="34" rx="14" ry="3" fill="#5a3020" opacity=".4"/>
+  <!-- Center part lines -->
+  <path d="M 60,30 Q 56,38 52,46" stroke="#5a3020" stroke-width=".4" fill="none" opacity=".5"/>
+  <path d="M 60,30 Q 64,38 68,46" stroke="#5a3020" stroke-width=".4" fill="none" opacity=".5"/>
+  <!-- Front parted bangs -->
+  <path d="M 44,40 Q 50,46 56,42 Q 56,38 52,36 Q 47,36 44,40 Z" fill="url(#hair_${id})"/>
+  <path d="M 76,40 Q 70,46 64,42 Q 64,38 68,36 Q 73,36 76,40 Z" fill="url(#hair_${id})"/>
+  <!-- Side wisp -->
+  <path d="M 36,44 Q 32,52 34,60" stroke="#1a0e08" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M 84,44 Q 88,52 86,60" stroke="#1a0e08" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+`}
 
-// ── ACCESSORIES ──
-function accPhoenix(){return`<path d="M 36,42 Q 60,28 84,42 L 84,48 L 36,48 Z" fill="#8b1818"/><path d="M 38,46 L 82,46 L 82,49 L 38,49 Z" fill="#f0c040"/><circle cx="60" cy="34" r="4" fill="#f0c040"/><circle cx="60" cy="33" r="2" fill="#e74c3c"/><circle cx="46" cy="40" r="2.5" fill="#f0c040"/><circle cx="74" cy="40" r="2.5" fill="#f0c040"/><path d="M 53,32 Q 48,22 42,24 Q 47,28 50,34" fill="#f0c040"/><path d="M 67,32 Q 72,22 78,24 Q 73,28 70,34" fill="#f0c040"/><line x1="38" y1="49" x2="34" y2="62" stroke="#fff" stroke-width=".6"/><circle cx="34" cy="63" r="1.8" fill="#fff"/><line x1="82" y1="49" x2="86" y2="62" stroke="#fff" stroke-width=".6"/><circle cx="86" cy="63" r="1.8" fill="#fff"/><line x1="50" y1="49" x2="50" y2="58" stroke="#fff" stroke-width=".5"/><circle cx="50" cy="59" r="1.3" fill="#fff"/><line x1="70" y1="49" x2="70" y2="58" stroke="#fff" stroke-width=".5"/><circle cx="70" cy="59" r="1.3" fill="#fff"/>`}
-function accEmperor(){return`<path d="M 28,40 Q 22,32 32,28 L 40,38 Z" fill="#1a0e08"/><path d="M 92,40 Q 98,32 88,28 L 80,38 Z" fill="#1a0e08"/><rect x="40" y="32" width="40" height="16" rx="2" fill="#1a0e08"/><rect x="40" y="45" width="40" height="3" fill="#f0c040"/><rect x="40" y="32" width="40" height="2.5" fill="#f0c040"/><circle cx="60" cy="28" r="3.5" fill="#e74c3c"/><circle cx="48" cy="40" r="2" fill="#fff"/><circle cx="60" cy="40" r="2.2" fill="#f0c040"/><circle cx="72" cy="40" r="2" fill="#fff"/><line x1="48" y1="42" x2="48" y2="52" stroke="#fff" stroke-width=".5"/><circle cx="48" cy="53" r="1.3" fill="#fff"/><line x1="72" y1="42" x2="72" y2="52" stroke="#fff" stroke-width=".5"/><circle cx="72" cy="53" r="1.3" fill="#fff"/>`}
-function accButterfly(){return`<g transform="translate(35,40) rotate(-20)"><ellipse cx="0" cy="0" rx="4" ry="5" fill="#88c0a8"/><ellipse cx="-3.5" cy="-1" rx="3" ry="3.5" fill="#a8d8c0"/><circle cx="-1" cy="0" r=".8" fill="#1a0e08"/><line x1="-1" y1="-1" x2="-2" y2="-4" stroke="#1a0e08" stroke-width=".4"/></g><circle cx="78" cy="35" r="2" fill="#f0c040"/><line x1="78" y1="37" x2="76" y2="48" stroke="#f0c040" stroke-width=".4"/><circle cx="76" cy="49" r="1" fill="#f0c040"/>`}
-function accGoldTassel(){return`<circle cx="36" cy="36" r="3.5" fill="#f0c040"/><circle cx="36" cy="36" r="2" fill="#e74c3c"/><line x1="34" y1="39" x2="32" y2="55" stroke="#f0c040" stroke-width=".5"/><line x1="36" y1="40" x2="36" y2="58" stroke="#f0c040" stroke-width=".5"/><line x1="38" y1="39" x2="40" y2="55" stroke="#f0c040" stroke-width=".5"/><circle cx="32" cy="56" r="1" fill="#f0c040"/><circle cx="36" cy="59" r="1" fill="#f0c040"/><circle cx="40" cy="56" r="1" fill="#f0c040"/><circle cx="84" cy="36" r="3.5" fill="#f0c040"/><circle cx="84" cy="36" r="2" fill="#e74c3c"/><line x1="82" y1="39" x2="80" y2="55" stroke="#f0c040" stroke-width=".5"/><line x1="84" y1="40" x2="84" y2="58" stroke="#f0c040" stroke-width=".5"/><line x1="86" y1="39" x2="88" y2="55" stroke="#f0c040" stroke-width=".5"/><circle cx="80" cy="56" r="1" fill="#f0c040"/><circle cx="84" cy="59" r="1" fill="#f0c040"/><circle cx="88" cy="56" r="1" fill="#f0c040"/>`}
-function accJade(){return`<ellipse cx="36" cy="34" rx="3" ry="4.5" fill="#3a8a6a"/><ellipse cx="36" cy="34" rx="1.8" ry="3" fill="#7aceb0"/><line x1="36" y1="38" x2="36" y2="50" stroke="#7aceb0" stroke-width=".6"/><ellipse cx="84" cy="34" rx="3" ry="4.5" fill="#3a8a6a"/><ellipse cx="84" cy="34" rx="1.8" ry="3" fill="#7aceb0"/>`}
-function accJadeS(){return`<rect x="56" y="28" width="8" height="3" rx="1" fill="#3a8a6a"/><circle cx="50" cy="38" r="2" fill="#3a8a6a"/><circle cx="50" cy="38" r="1.2" fill="#7aceb0"/><circle cx="70" cy="38" r="2" fill="#3a8a6a"/><circle cx="70" cy="38" r="1.2" fill="#7aceb0"/>`}
-function accPearl(){return`<circle cx="36" cy="32" r="2.2" fill="#fff"/><circle cx="32" cy="38" r="1.8" fill="#fff"/><circle cx="40" cy="38" r="1.8" fill="#fff"/><circle cx="36" cy="42" r="1.5" fill="#fff"/><circle cx="84" cy="32" r="2.2" fill="#fff"/><circle cx="80" cy="38" r="1.8" fill="#fff"/><circle cx="88" cy="38" r="1.8" fill="#fff"/><circle cx="84" cy="42" r="1.5" fill="#fff"/><circle cx="60" cy="32" r="1.5" fill="#fff"/>`}
-function accSilver(){return`<path d="M 34,32 L 40,38 L 38,40 L 32,34 Z" fill="#d8d8e0"/><circle cx="34" cy="32" r="1.5" fill="#fff"/><path d="M 86,32 L 80,38 L 82,40 L 88,34 Z" fill="#d8d8e0"/><circle cx="86" cy="32" r="1.5" fill="#fff"/>`}
-function accJadeHat(){return`<path d="M 42,32 Q 60,20 78,32 L 78,42 L 42,42 Z" fill="#2a5a4a"/><path d="M 44,34 Q 60,24 76,34 L 76,40 L 44,40 Z" fill="#5a8a7a"/><rect x="42" y="42" width="36" height="3" fill="#f0c040"/><circle cx="60" cy="28" r="2.5" fill="#7aceb0"/>`}
-function accEunuchHat(){return`<ellipse cx="60" cy="30" rx="30" ry="9" fill="#1a0e08"/><rect x="30" y="30" width="60" height="14" fill="#2a1810"/><ellipse cx="60" cy="44" rx="30" ry="6" fill="#1a0e08"/><circle cx="60" cy="20" r="3.5" fill="#c0392b"/><circle cx="60" cy="20" r="1.5" fill="#f0c040"/><line x1="32" y1="46" x2="30" y2="60" stroke="#1a0e08" stroke-width=".8"/><line x1="88" y1="46" x2="90" y2="60" stroke="#1a0e08" stroke-width=".8"/>`}
-function accFlower(){return`<g transform="translate(36,34)"><circle r="2" fill="#f8a8b8"/><circle cx="-2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="-2.5" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="2.5" r="1.6" fill="#f8a8b8"/><circle r=".8" fill="#f0c040"/></g><g transform="translate(84,34)"><circle r="2" fill="#f8a8b8"/><circle cx="-2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="2.5" cy="0" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="-2.5" r="1.6" fill="#f8a8b8"/><circle cx="0" cy="2.5" r="1.6" fill="#f8a8b8"/><circle r=".8" fill="#f0c040"/></g>`}
-function accSimpleflower(){return`<g transform="translate(36,36)"><circle r="1.8" fill="#88c0a8"/><circle cx="-2" cy="0" r="1.4" fill="#88c0a8"/><circle cx="2" cy="0" r="1.4" fill="#88c0a8"/><circle r=".7" fill="#f0c040"/></g>`}
+function hairDoubleRing(id){return`
+  <!-- Back hair -->
+  <path d="M 38,46 Q 30,62 38,82 L 48,82 Q 42,62 46,46 Z" fill="url(#hair_${id})"/>
+  <path d="M 82,46 Q 90,62 82,82 L 72,82 Q 78,62 74,46 Z" fill="url(#hair_${id})"/>
+  <!-- Hair top -->
+  <path d="M 38,42 Q 60,28 82,42 L 80,36 Q 60,24 40,36 Z" fill="url(#hair_${id})"/>
+  <!-- Side buns (双环髻) -->
+  <circle cx="28" cy="30" r="12" fill="url(#hair_${id})"/>
+  <circle cx="26" cy="26" r="6" fill="url(#hairhi_${id})"/>
+  <circle cx="28" cy="30" r="7" fill="none" stroke="#5a3020" stroke-width=".4" opacity=".6"/>
+  <circle cx="28" cy="30" r="3" fill="none" stroke="#5a3020" stroke-width=".3" opacity=".5"/>
+  <circle cx="92" cy="30" r="12" fill="url(#hair_${id})"/>
+  <circle cx="94" cy="26" r="6" fill="url(#hairhi_${id})"/>
+  <circle cx="92" cy="30" r="7" fill="none" stroke="#5a3020" stroke-width=".4" opacity=".6"/>
+  <circle cx="92" cy="30" r="3" fill="none" stroke="#5a3020" stroke-width=".3" opacity=".5"/>
+  <!-- Bangs -->
+  <path d="M 42,40 Q 50,46 58,42 L 58,38 Q 50,36 42,40 Z" fill="url(#hair_${id})"/>
+  <path d="M 78,40 Q 70,46 62,42 L 62,38 Q 70,36 78,40 Z" fill="url(#hair_${id})"/>
+`}
+
+function hairMaleBun(id){return`
+  <!-- Back hair -->
+  <path d="M 36,42 Q 30,58 36,74 L 46,74 Q 42,58 46,44 Z" fill="url(#hair_${id})"/>
+  <path d="M 84,42 Q 90,58 84,74 L 74,74 Q 78,58 74,44 Z" fill="url(#hair_${id})"/>
+  <!-- Hair top -->
+  <path d="M 36,42 Q 60,30 84,42 L 82,36 Q 60,28 38,36 Z" fill="url(#hair_${id})"/>
+  <!-- Topknot (under crown) -->
+  <ellipse cx="60" cy="32" rx="9" ry="11" fill="url(#hair_${id})"/>
+  <ellipse cx="60" cy="29" rx="5" ry="6" fill="url(#hairhi_${id})"/>
+  <!-- Topknot tie -->
+  <rect x="54" y="38" width="12" height="2" fill="#f0c040" opacity=".6" rx="1"/>
+  <!-- Forehead bangs -->
+  <path d="M 48,42 Q 60,38 72,42 L 72,46 Q 60,44 48,46 Z" fill="url(#hair_${id})"/>
+`}
+
+function hairEunuch(id){return`
+  <!-- Very minimal hair (mostly under hat) -->
+  <path d="M 40,52 Q 35,66 42,76 L 48,76 Q 44,62 48,52 Z" fill="url(#hair_${id})"/>
+  <path d="M 80,52 Q 85,66 78,76 L 72,76 Q 76,62 72,52 Z" fill="url(#hair_${id})"/>
+`}
+
+function hairCrownM(id){return`
+  <!-- Side wisps -->
+  <path d="M 40,50 Q 35,60 38,72 L 44,72 Q 41,60 45,50 Z" fill="url(#hair_${id})"/>
+  <path d="M 80,50 Q 85,60 82,72 L 76,72 Q 79,60 75,50 Z" fill="url(#hair_${id})"/>
+`}
+
+// ── ACCESSORIES (elaborate with gradients, shadows, details) ──
+function accPhoenix(){return`
+  <!-- 凤冠 main crown -->
+  <defs>
+    <linearGradient id="phc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a01818"/>
+      <stop offset="100%" stop-color="#6a1010"/>
+    </linearGradient>
+  </defs>
+  <!-- Crown body -->
+  <path d="M 30,44 Q 60,22 90,44 L 88,52 L 32,52 Z" fill="url(#phc)"/>
+  <path d="M 30,44 Q 60,22 90,44 L 88,52 L 32,52 Z" fill="none" stroke="#f0c040" stroke-width="1.2"/>
+  <!-- Gold band bottom -->
+  <rect x="32" y="49" width="56" height="3.5" fill="#f0c040"/>
+  <rect x="32" y="49" width="56" height="3.5" fill="none" stroke="#a08020" stroke-width=".3"/>
+  <!-- Center ruby on gold setting -->
+  <circle cx="60" cy="30" r="5.5" fill="#f0c040" stroke="#a08020" stroke-width=".6"/>
+  <circle cx="60" cy="30" r="3.5" fill="#e74c3c"/>
+  <circle cx="59" cy="29" r="1.2" fill="#ff8a8a" opacity=".9"/>
+  <!-- Side rubies -->
+  <circle cx="44" cy="38" r="3" fill="#f0c040" stroke="#a08020" stroke-width=".5"/>
+  <circle cx="44" cy="38" r="1.8" fill="#e74c3c"/>
+  <circle cx="76" cy="38" r="3" fill="#f0c040" stroke="#a08020" stroke-width=".5"/>
+  <circle cx="76" cy="38" r="1.8" fill="#e74c3c"/>
+  <!-- Phoenix wings (detailed) -->
+  <path d="M 50,30 Q 38,18 28,20 Q 34,24 40,28 Q 44,30 48,32 Z" fill="#f0c040" stroke="#a08020" stroke-width=".5"/>
+  <path d="M 70,30 Q 82,18 92,20 Q 86,24 80,28 Q 76,30 72,32 Z" fill="#f0c040" stroke="#a08020" stroke-width=".5"/>
+  <!-- Wing feather details -->
+  <line x1="32" y1="22" x2="38" y2="28" stroke="#a08020" stroke-width=".4"/>
+  <line x1="38" y1="22" x2="42" y2="28" stroke="#a08020" stroke-width=".4"/>
+  <line x1="88" y1="22" x2="82" y2="28" stroke="#a08020" stroke-width=".4"/>
+  <line x1="82" y1="22" x2="78" y2="28" stroke="#a08020" stroke-width=".4"/>
+  <!-- Side hanging pearl strings -->
+  <line x1="34" y1="52" x2="28" y2="68" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="30" cy="60" r="1.3" fill="#fff" stroke="#a08020" stroke-width=".2"/>
+  <circle cx="28" cy="68" r="2.2" fill="#fff" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="27.5" cy="67" r=".7" fill="#fff" opacity=".8"/>
+  <line x1="86" y1="52" x2="92" y2="68" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="90" cy="60" r="1.3" fill="#fff" stroke="#a08020" stroke-width=".2"/>
+  <circle cx="92" cy="68" r="2.2" fill="#fff" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="91.5" cy="67" r=".7" fill="#fff" opacity=".8"/>
+  <!-- Front 3 pearl strings -->
+  <line x1="48" y1="53" x2="48" y2="60" stroke="#a08020" stroke-width=".3"/>
+  <circle cx="48" cy="61" r="1.4" fill="#fff" stroke="#a08020" stroke-width=".3"/>
+  <line x1="60" y1="53" x2="60" y2="62" stroke="#a08020" stroke-width=".3"/>
+  <circle cx="60" cy="63" r="1.6" fill="#fff" stroke="#a08020" stroke-width=".3"/>
+  <line x1="72" y1="53" x2="72" y2="60" stroke="#a08020" stroke-width=".3"/>
+  <circle cx="72" cy="61" r="1.4" fill="#fff" stroke="#a08020" stroke-width=".3"/>
+`}
+
+function accEmperor(){return`
+  <!-- 翼善冠 wings -->
+  <path d="M 26,38 Q 14,28 20,22 Q 28,28 36,36 Z" fill="#0a0504"/>
+  <path d="M 26,38 Q 14,28 20,22 Q 28,28 36,36 Z" fill="none" stroke="#f0c040" stroke-width=".8"/>
+  <path d="M 94,38 Q 106,28 100,22 Q 92,28 84,36 Z" fill="#0a0504"/>
+  <path d="M 94,38 Q 106,28 100,22 Q 92,28 84,36 Z" fill="none" stroke="#f0c040" stroke-width=".8"/>
+  <!-- Crown body (main) -->
+  <path d="M 36,28 Q 60,16 84,28 L 84,52 L 36,52 Z" fill="#0a0504"/>
+  <path d="M 36,28 Q 60,16 84,28 L 84,32 L 36,32 Z" fill="#1a0e08"/>
+  <!-- Gold trim top + bottom -->
+  <path d="M 36,28 Q 60,16 84,28 L 82,30 Q 60,18 38,30 Z" fill="#f0c040"/>
+  <rect x="36" y="50" width="48" height="3" fill="#f0c040"/>
+  <!-- Side gold trim -->
+  <rect x="36" y="28" width="2" height="24" fill="#f0c040"/>
+  <rect x="82" y="28" width="2" height="24" fill="#f0c040"/>
+  <!-- Top central jewel (large ruby) -->
+  <ellipse cx="60" cy="20" rx="4.5" ry="5.5" fill="#e74c3c"/>
+  <ellipse cx="59" cy="18" rx="1.8" ry="2.5" fill="#ff8a8a" opacity=".9"/>
+  <!-- Front jewels (3) -->
+  <circle cx="48" cy="40" r="3" fill="#f0c040" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="48" cy="40" r="1.8" fill="#3a8a6a"/>
+  <circle cx="60" cy="40" r="3.5" fill="#f0c040" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="60" cy="40" r="2" fill="#e74c3c"/>
+  <circle cx="59" cy="39" r=".8" fill="#fff" opacity=".9"/>
+  <circle cx="72" cy="40" r="3" fill="#f0c040" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="72" cy="40" r="1.8" fill="#3a8a6a"/>
+  <!-- Hanging pearls -->
+  <line x1="48" y1="43" x2="46" y2="58" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="46" cy="58" r="1.6" fill="#fff" stroke="#a08020" stroke-width=".3"/>
+  <line x1="72" y1="43" x2="74" y2="58" stroke="#a08020" stroke-width=".4"/>
+  <circle cx="74" cy="58" r="1.6" fill="#fff" stroke="#a08020" stroke-width=".3"/>
+  <!-- Dragon motif (subtle) -->
+  <path d="M 44,38 Q 48,36 52,38" stroke="#f0c040" stroke-width=".5" fill="none" opacity=".8"/>
+  <path d="M 68,38 Q 72,36 76,38" stroke="#f0c040" stroke-width=".5" fill="none" opacity=".8"/>
+`}
+
+function accButterfly(){return`
+  <!-- Large butterfly hairpin (left side) -->
+  <g transform="translate(34,38)">
+    <!-- Wings -->
+    <ellipse cx="0" cy="0" rx="6" ry="5" fill="#88c0a8" transform="rotate(-15)"/>
+    <ellipse cx="-1" cy="-2" rx="4" ry="3" fill="#a8d8c0" transform="rotate(-25)"/>
+    <ellipse cx="-1" cy="2" rx="4" ry="3" fill="#a8d8c0" transform="rotate(15)"/>
+    <ellipse cx="-4" cy="-1" rx="2.5" ry="2" fill="#bdf0d0" transform="rotate(-30)"/>
+    <!-- Wing pattern (gold dots) -->
+    <circle cx="2" cy="-1" r=".6" fill="#f0c040"/>
+    <circle cx="2" cy="1" r=".6" fill="#f0c040"/>
+    <circle cx="-2" cy="-2" r=".5" fill="#f0c040"/>
+    <!-- Body -->
+    <ellipse cx="0" cy="0" rx="1" ry="3" fill="#3a2018"/>
+    <!-- Antennae -->
+    <path d="M 0,-2 Q -2,-5 -3,-7" stroke="#1a0e08" stroke-width=".5" fill="none"/>
+    <path d="M 0,-2 Q 2,-5 3,-7" stroke="#1a0e08" stroke-width=".5" fill="none"/>
+    <circle cx="-3" cy="-7" r=".6" fill="#f0c040"/>
+    <circle cx="3" cy="-7" r=".6" fill="#f0c040"/>
+  </g>
+  <!-- Right side jade pin -->
+  <ellipse cx="80" cy="36" rx="2.5" ry="3.5" fill="#3a8a6a"/>
+  <ellipse cx="80" cy="36" rx="1.5" ry="2.2" fill="#88c0a8"/>
+  <line x1="80" y1="40" x2="78" y2="52" stroke="#3a8a6a" stroke-width=".6"/>
+  <circle cx="78" cy="53" r="1" fill="#88c0a8"/>
+`}
+
+function accGoldTassel(){return`
+  <!-- 步摇 (gold dangling pins) - left side -->
+  <g transform="translate(34,32)">
+    <!-- Top jewel -->
+    <circle cx="0" cy="0" r="3.5" fill="#f0c040" stroke="#a08020" stroke-width=".4"/>
+    <circle cx="0" cy="0" r="2.2" fill="#e74c3c"/>
+    <circle cx="-.5" cy="-.5" r=".8" fill="#fff" opacity=".7"/>
+    <!-- Hanging chains with bobbles -->
+    <line x1="-2" y1="3" x2="-3" y2="18" stroke="#f0c040" stroke-width=".5"/>
+    <circle cx="-3" cy="9" r=".7" fill="#f0c040"/>
+    <circle cx="-3" cy="18" r="1.3" fill="#f0c040" stroke="#a08020" stroke-width=".2"/>
+    <line x1="0" y1="4" x2="0" y2="22" stroke="#f0c040" stroke-width=".5"/>
+    <circle cx="0" cy="11" r=".7" fill="#f0c040"/>
+    <circle cx="0" cy="22" r="1.5" fill="#e74c3c" stroke="#a08020" stroke-width=".2"/>
+    <line x1="2" y1="3" x2="3" y2="18" stroke="#f0c040" stroke-width=".5"/>
+    <circle cx="3" cy="9" r=".7" fill="#f0c040"/>
+    <circle cx="3" cy="18" r="1.3" fill="#f0c040" stroke="#a08020" stroke-width=".2"/>
+  </g>
+  <!-- Right side (symmetric) -->
+  <g transform="translate(86,32)">
+    <circle cx="0" cy="0" r="3.5" fill="#f0c040" stroke="#a08020" stroke-width=".4"/>
+    <circle cx="0" cy="0" r="2.2" fill="#e74c3c"/>
+    <circle cx="-.5" cy="-.5" r=".8" fill="#fff" opacity=".7"/>
+    <line x1="-2" y1="3" x2="-3" y2="18" stroke="#f0c040" stroke-width=".5"/>
+    <circle cx="-3" cy="9" r=".7" fill="#f0c040"/>
+    <circle cx="-3" cy="18" r="1.3" fill="#f0c040" stroke="#a08020" stroke-width=".2"/>
+    <line x1="0" y1="4" x2="0" y2="22" stroke="#f0c040" stroke-width=".5"/>
+    <circle cx="0" cy="11" r=".7" fill="#f0c040"/>
+    <circle cx="0" cy="22" r="1.5" fill="#e74c3c" stroke="#a08020" stroke-width=".2"/>
+    <line x1="2" y1="3" x2="3" y2="18" stroke="#f0c040" stroke-width=".5"/>
+    <circle cx="3" cy="9" r=".7" fill="#f0c040"/>
+    <circle cx="3" cy="18" r="1.3" fill="#f0c040" stroke="#a08020" stroke-width=".2"/>
+  </g>
+`}
+
+function accJade(){return`
+  <!-- Jade hairpin pair -->
+  <g transform="translate(34,32)">
+    <ellipse cx="0" cy="0" rx="3.5" ry="5" fill="#1a5a3a"/>
+    <ellipse cx="0" cy="0" rx="2.5" ry="4" fill="#3a8a6a"/>
+    <ellipse cx="0" cy="-1" rx="1.5" ry="2" fill="#88c0a8" opacity=".8"/>
+    <ellipse cx="-1" cy="-2" rx=".6" ry="1" fill="#fff" opacity=".7"/>
+    <!-- Stem -->
+    <rect x="-.6" y="4" width="1.2" height="14" fill="#3a8a6a"/>
+    <ellipse cx="0" cy="18" rx="1.2" ry=".8" fill="#88c0a8"/>
+  </g>
+  <g transform="translate(86,32)">
+    <ellipse cx="0" cy="0" rx="3.5" ry="5" fill="#1a5a3a"/>
+    <ellipse cx="0" cy="0" rx="2.5" ry="4" fill="#3a8a6a"/>
+    <ellipse cx="0" cy="-1" rx="1.5" ry="2" fill="#88c0a8" opacity=".8"/>
+    <ellipse cx="-1" cy="-2" rx=".6" ry="1" fill="#fff" opacity=".7"/>
+    <rect x="-.6" y="4" width="1.2" height="14" fill="#3a8a6a"/>
+    <ellipse cx="0" cy="18" rx="1.2" ry=".8" fill="#88c0a8"/>
+  </g>
+`}
+
+function accJadeS(){return`
+  <!-- Subtle jade headband -->
+  <path d="M 36,40 Q 60,30 84,40 L 82,44 Q 60,36 38,44 Z" fill="#1a5a3a"/>
+  <path d="M 36,40 Q 60,30 84,40 L 84,42 Q 60,34 36,42 Z" fill="#3a8a6a"/>
+  <!-- Center jade -->
+  <ellipse cx="60" cy="32" rx="3.5" ry="2.5" fill="#1a5a3a"/>
+  <ellipse cx="60" cy="32" rx="2.5" ry="1.5" fill="#88c0a8"/>
+  <!-- Side small jades -->
+  <circle cx="48" cy="38" r="1.8" fill="#1a5a3a"/>
+  <circle cx="48" cy="38" r="1.2" fill="#88c0a8"/>
+  <circle cx="72" cy="38" r="1.8" fill="#1a5a3a"/>
+  <circle cx="72" cy="38" r="1.2" fill="#88c0a8"/>
+`}
+
+function accPearl(){return`
+  <!-- Multi-pearl hair arrangement -->
+  <g transform="translate(34,30)">
+    <circle cx="0" cy="0" r="2.5" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="-.5" cy="-.5" r=".8" fill="#fff" opacity=".9"/>
+    <circle cx="-4" cy="4" r="2" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="4" cy="4" r="2" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="0" cy="8" r="1.6" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="-3" cy="14" r="1.3" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="3" cy="14" r="1.3" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+  </g>
+  <g transform="translate(86,30)">
+    <circle cx="0" cy="0" r="2.5" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="-.5" cy="-.5" r=".8" fill="#fff" opacity=".9"/>
+    <circle cx="-4" cy="4" r="2" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="4" cy="4" r="2" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="0" cy="8" r="1.6" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="-3" cy="14" r="1.3" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+    <circle cx="3" cy="14" r="1.3" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+  </g>
+  <!-- Central forehead pearl -->
+  <circle cx="60" cy="34" r="1.8" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+  <circle cx="59.5" cy="33.5" r=".5" fill="#fff" opacity=".9"/>
+`}
+
+function accSilver(){return`
+  <!-- Silver hairpins (simple but elegant) -->
+  <g transform="translate(34,32)">
+    <path d="M -3,-3 L 3,3 L 1,5 L -5,-1 Z" fill="#d8d8e0" stroke="#8a8a98" stroke-width=".3"/>
+    <circle cx="-3" cy="-3" r="2" fill="#fff" stroke="#8a8a98" stroke-width=".3"/>
+    <circle cx="-3.5" cy="-3.5" r=".5" fill="#fff" opacity=".9"/>
+  </g>
+  <g transform="translate(86,32)">
+    <path d="M 3,-3 L -3,3 L -1,5 L 5,-1 Z" fill="#d8d8e0" stroke="#8a8a98" stroke-width=".3"/>
+    <circle cx="3" cy="-3" r="2" fill="#fff" stroke="#8a8a98" stroke-width=".3"/>
+    <circle cx="3.5" cy="-3.5" r=".5" fill="#fff" opacity=".9"/>
+  </g>
+  <!-- Center silver flower -->
+  <g transform="translate(60,30)">
+    <path d="M 0,-3 L 1,-1 L 3,0 L 1,1 L 0,3 L -1,1 L -3,0 L -1,-1 Z" fill="#d8d8e0" stroke="#8a8a98" stroke-width=".3"/>
+    <circle cx="0" cy="0" r=".8" fill="#fff"/>
+  </g>
+`}
+
+function accJadeHat(){return`
+  <!-- 玉冠 (jade crown) for 果郡王 -->
+  <!-- Crown body -->
+  <path d="M 40,30 Q 60,16 80,30 L 80,46 L 40,46 Z" fill="#1a4a3a"/>
+  <path d="M 42,32 Q 60,20 78,32 L 78,44 L 42,44 Z" fill="#3a8a6a"/>
+  <path d="M 44,34 Q 60,24 76,34 L 76,38 L 44,38 Z" fill="#5aaa8a"/>
+  <!-- Gold trim -->
+  <rect x="40" y="44" width="40" height="3" fill="#f0c040"/>
+  <rect x="40" y="44" width="40" height="3" fill="none" stroke="#a08020" stroke-width=".3"/>
+  <!-- Top jewel -->
+  <ellipse cx="60" cy="22" rx="3" ry="4" fill="#88c0a8"/>
+  <ellipse cx="59" cy="21" rx="1" ry="1.5" fill="#fff" opacity=".8"/>
+  <!-- Side pearls -->
+  <circle cx="48" cy="38" r="1.5" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+  <circle cx="60" cy="36" r="1.8" fill="#f0c040" stroke="#a08020" stroke-width=".3"/>
+  <circle cx="72" cy="38" r="1.5" fill="#fff" stroke="#a8a8b0" stroke-width=".3"/>
+  <!-- Decorative band -->
+  <line x1="44" y1="40" x2="76" y2="40" stroke="#f0c040" stroke-width=".5" opacity=".7"/>
+`}
+
+function accEunuchHat(){return`
+  <!-- 太监帽 -->
+  <!-- Hat brim (lower) -->
+  <ellipse cx="60" cy="44" rx="32" ry="7" fill="#0a0504"/>
+  <!-- Hat body -->
+  <path d="M 32,30 Q 60,18 88,30 L 86,44 L 34,44 Z" fill="#1a0e08"/>
+  <path d="M 32,30 Q 60,18 88,30 L 86,34 L 34,34 Z" fill="#2a1810"/>
+  <!-- Hat top -->
+  <ellipse cx="60" cy="26" rx="28" ry="6" fill="#0a0504"/>
+  <ellipse cx="60" cy="24" rx="18" ry="3" fill="#1a0e08" opacity=".7"/>
+  <!-- Top red button + gold -->
+  <circle cx="60" cy="18" r="4" fill="#c0392b" stroke="#f0c040" stroke-width=".5"/>
+  <circle cx="60" cy="18" r="2" fill="#f0c040"/>
+  <circle cx="59" cy="17" r=".7" fill="#fff" opacity=".7"/>
+  <!-- Gold band -->
+  <rect x="32" y="42" width="56" height="2" fill="#f0c040" opacity=".5"/>
+  <!-- Side hanging cords -->
+  <path d="M 32,46 Q 28,55 30,62" stroke="#0a0504" stroke-width=".8" fill="none"/>
+  <circle cx="30" cy="63" r="1.2" fill="#c0392b"/>
+  <path d="M 88,46 Q 92,55 90,62" stroke="#0a0504" stroke-width=".8" fill="none"/>
+  <circle cx="90" cy="63" r="1.2" fill="#c0392b"/>
+`}
+
+function accFlower(){return`
+  <!-- 牡丹花 / 桃花 双簪 (peony flowers) -->
+  <g transform="translate(32,30)">
+    <!-- Outer petals -->
+    <circle cx="0" cy="0" r="3.5" fill="#e8488a" opacity=".95"/>
+    <circle cx="-3" cy="-1" r="2.5" fill="#f068a0"/>
+    <circle cx="3" cy="-1" r="2.5" fill="#f068a0"/>
+    <circle cx="-2" cy="3" r="2.5" fill="#f068a0"/>
+    <circle cx="2" cy="3" r="2.5" fill="#f068a0"/>
+    <!-- Inner petals -->
+    <circle cx="0" cy="-1" r="1.8" fill="#f898c0"/>
+    <circle cx="0" cy="0" r="1" fill="#f0c040"/>
+    <!-- Leaves -->
+    <ellipse cx="-5" cy="3" rx="2" ry="1" fill="#3a8a6a" transform="rotate(-30 -5 3)"/>
+    <ellipse cx="5" cy="3" rx="2" ry="1" fill="#3a8a6a" transform="rotate(30 5 3)"/>
+  </g>
+  <g transform="translate(88,30)">
+    <circle cx="0" cy="0" r="3.5" fill="#e8488a" opacity=".95"/>
+    <circle cx="-3" cy="-1" r="2.5" fill="#f068a0"/>
+    <circle cx="3" cy="-1" r="2.5" fill="#f068a0"/>
+    <circle cx="-2" cy="3" r="2.5" fill="#f068a0"/>
+    <circle cx="2" cy="3" r="2.5" fill="#f068a0"/>
+    <circle cx="0" cy="-1" r="1.8" fill="#f898c0"/>
+    <circle cx="0" cy="0" r="1" fill="#f0c040"/>
+    <ellipse cx="-5" cy="3" rx="2" ry="1" fill="#3a8a6a" transform="rotate(-30 -5 3)"/>
+    <ellipse cx="5" cy="3" rx="2" ry="1" fill="#3a8a6a" transform="rotate(30 5 3)"/>
+  </g>
+`}
+
+function accSimpleflower(){return`
+  <!-- Single simple flower (掌事姑姑 朴素) -->
+  <g transform="translate(34,32)">
+    <circle cx="0" cy="0" r="2.2" fill="#88c0a8"/>
+    <circle cx="-2.2" cy="0" r="1.6" fill="#a8d8c0"/>
+    <circle cx="2.2" cy="0" r="1.6" fill="#a8d8c0"/>
+    <circle cx="0" cy="-2.2" r="1.6" fill="#a8d8c0"/>
+    <circle cx="0" cy="2.2" r="1.6" fill="#a8d8c0"/>
+    <circle cx="0" cy="0" r=".8" fill="#f0c040"/>
+  </g>
+  <!-- Small earring hint -->
+  <circle cx="86" cy="40" r="1" fill="#f0c040"/>
+`}
 
 const HAIR={bun:hairBun,doubleRing:hairDoubleRing,maleBun:hairMaleBun,eunuch:hairEunuch,crownM:hairCrownM};
 const ACC={phoenix:accPhoenix,emperor:accEmperor,butterfly:accButterfly,goldTassel:accGoldTassel,jade:accJade,jadeS:accJadeS,pearl:accPearl,silver:accSilver,jadeHat:accJadeHat,eunuchHat:accEunuchHat,flower:accFlower,simpleflower:accSimpleflower};
 
+// AVATAR_IMG_MAP — if a character has an image URL here, it's used instead of SVG
+// Populate after AI generation: AVATAR_IMG_MAP.huangshang = 'imgs/huangshang.png'
+const AVATAR_IMG_MAP={};
+
 function makeAvatar(charId){
   const c=CHARS.find(x=>x.id===charId);if(!c)return'';
-  const skin='#fde2c2',robeL=lighten(c.robe,.15);
+  // If an image is provided, use it
+  if(AVATAR_IMG_MAP[charId]){
+    return`<img src="${AVATAR_IMG_MAP[charId]}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block"/>`;
+  }
+  const id=c.id;
+  const robeL=lighten(c.robe,.18),robeD=darken(c.robe,.28),robeXL=lighten(c.robe,.32);
+  const bgL=lighten(c.bg,.25),bgD=darken(c.bg,.18);
   const isFemale=!c.isM&&!c.isE;
   return`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-    <defs><radialGradient id="g_${c.id}" cx=".5" cy=".4"><stop offset="0%" stop-color="${lighten(c.bg,.2)}"/><stop offset="100%" stop-color="${c.bg}"/></radialGradient></defs>
-    <circle cx="60" cy="60" r="60" fill="url(#g_${c.id})"/>
-    <path d="M 22,120 L 22,98 Q 35,82 60,82 Q 85,82 98,98 L 98,120 Z" fill="${c.robe}"/>
-    <path d="M 48,100 L 60,86 L 72,100 L 72,120 L 48,120 Z" fill="${robeL}"/>
-    <path d="M 56,88 L 60,82 L 64,88 L 60,94 Z" fill="${darken(c.robe,.2)}"/>
-    <rect x="54" y="76" width="12" height="12" fill="${skin}"/>
-    <ellipse cx="60" cy="60" rx="20" ry="24" fill="${skin}"/>
-    ${HAIR[c.hair]?HAIR[c.hair]():''}
-    <ellipse cx="52" cy="62" rx="1.6" ry="2.6" fill="#1a0e08"/>
-    <ellipse cx="68" cy="62" rx="1.6" ry="2.6" fill="#1a0e08"/>
-    <path d="M 47,57 Q 52,54 56,57" stroke="#1a0e08" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-    <path d="M 64,57 Q 68,54 73,57" stroke="#1a0e08" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-    ${isFemale?`<ellipse cx="60" cy="75" rx="2.5" ry="1.6" fill="#c0392b"/><ellipse cx="48" cy="71" rx="3.5" ry="2.3" fill="#e8a0a0" opacity=".45"/><ellipse cx="72" cy="71" rx="3.5" ry="2.3" fill="#e8a0a0" opacity=".45"/><circle cx="60" cy="50" r="1.6" fill="#c0392b" opacity=".8"/>`:`<path d="M 56,74 Q 60,76 64,74" stroke="#8a3a2a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`}
-    ${c.beard?`<path d="M 50,80 Q 60,90 70,80" stroke="#2a1810" stroke-width="1.2" fill="none"/><path d="M 54,82 L 54,86 M 60,82 L 60,87 M 66,82 L 66,86" stroke="#2a1810" stroke-width="1" stroke-linecap="round"/>`:''}
+    <defs>
+      <radialGradient id="bg_${id}" cx=".4" cy=".3"><stop offset="0%" stop-color="${bgL}"/><stop offset="100%" stop-color="${bgD}"/></radialGradient>
+      <radialGradient id="skin_${id}" cx=".5" cy=".35"><stop offset="0%" stop-color="#fef0d8"/><stop offset="65%" stop-color="#f8dab4"/><stop offset="100%" stop-color="#e8b890"/></radialGradient>
+      <linearGradient id="hair_${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a2018"/><stop offset="45%" stop-color="#1a0e08"/><stop offset="100%" stop-color="#080403"/></linearGradient>
+      <linearGradient id="hairhi_${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6a4030" stop-opacity=".7"/><stop offset="100%" stop-color="#3a2018" stop-opacity="0"/></linearGradient>
+      <linearGradient id="robe_${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${robeL}"/><stop offset="100%" stop-color="${robeD}"/></linearGradient>
+      <linearGradient id="robein_${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${robeXL}"/><stop offset="100%" stop-color="${robeL}"/></linearGradient>
+      <linearGradient id="lips_${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#9a1818"/><stop offset="100%" stop-color="#d04030"/></linearGradient>
+    </defs>
+
+    <!-- Background -->
+    <circle cx="60" cy="60" r="60" fill="url(#bg_${id})"/>
+    <!-- Decorative rings -->
+    <circle cx="60" cy="60" r="56" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width=".5" stroke-dasharray="2 3"/>
+    <circle cx="60" cy="60" r="59" fill="none" stroke="#fff" stroke-opacity=".15" stroke-width=".5"/>
+
+    <!-- Robe outer -->
+    <path d="M 10,120 Q 10,90 22,80 Q 38,74 60,74 Q 82,74 98,80 Q 110,90 110,120 Z" fill="url(#robe_${id})"/>
+    <!-- Robe outer shadow (left lapel) -->
+    <path d="M 22,80 Q 36,82 50,92 L 60,100 L 60,120 L 30,120 Z" fill="${robeD}" opacity=".4"/>
+    <!-- Robe lapel right (lighter) -->
+    <path d="M 60,100 L 70,92 Q 84,82 98,80 L 90,120 L 60,120 Z" fill="${robeL}" opacity=".5"/>
+    <!-- Inner V-collar -->
+    <path d="M 46,88 Q 60,80 74,88 L 70,96 L 60,90 L 50,96 Z" fill="url(#robein_${id})"/>
+    <!-- Collar trim (gold border) -->
+    <path d="M 46,88 Q 60,80 74,88" fill="none" stroke="#f0c040" stroke-width=".8" opacity=".7"/>
+    <!-- Embroidery dots (gold) -->
+    <circle cx="60" cy="100" r="2" fill="#f0c040"/>
+    <circle cx="60" cy="106" r="1.5" fill="#f0c040" opacity=".75"/>
+    <circle cx="60" cy="111" r="1" fill="#f0c040" opacity=".5"/>
+
+    <!-- Neck with shadow -->
+    <path d="M 53,76 Q 53,82 56,86 L 64,86 Q 67,82 67,76 Z" fill="url(#skin_${id})"/>
+    <ellipse cx="60" cy="86" rx="6.5" ry="2" fill="#c89070" opacity=".4"/>
+
+    <!-- Face oval -->
+    <ellipse cx="60" cy="58" rx="19" ry="24" fill="url(#skin_${id})"/>
+    <!-- Jaw shadow subtle -->
+    <ellipse cx="60" cy="68" rx="13" ry="6" fill="#d09070" opacity=".22"/>
+    <!-- Face highlight on cheek (left) -->
+    <ellipse cx="48" cy="58" rx="3" ry="5" fill="#fff" opacity=".15"/>
+
+    <!-- HAIR (back/sides + front) -->
+    ${HAIR[c.hair]?HAIR[c.hair](id):''}
+
+    <!-- 柳叶眉 eyebrows (more refined - layered) -->
+    <path d="M 45,53 Q 49,50 53,52 Q 55,53 56,55 Q 53,53 50,53 Q 47,53 45,55 Z" fill="#1a0e08"/>
+    <path d="M 64,55 Q 65,53 67,52 Q 71,50 75,53 Q 73,53 70,53 Q 67,53 64,55 Z" fill="#1a0e08"/>
+
+    <!-- Eye sockets (light pink wash) -->
+    ${isFemale?`<ellipse cx="51" cy="61" rx="4.5" ry="2" fill="#f5c8b0" opacity=".5"/><ellipse cx="69" cy="61" rx="4.5" ry="2" fill="#f5c8b0" opacity=".5"/>`:''}
+
+    <!-- Almond eyes - whites -->
+    <path d="M 47,61 Q 51,58.5 55,61 Q 51,62.5 47,61 Z" fill="#fffaf2"/>
+    <path d="M 65,61 Q 69,58.5 73,61 Q 69,62.5 65,61 Z" fill="#fffaf2"/>
+
+    <!-- Pupils -->
+    <ellipse cx="51" cy="60.7" rx="1.7" ry="2" fill="#1a0e08"/>
+    <ellipse cx="69" cy="60.7" rx="1.7" ry="2" fill="#1a0e08"/>
+
+    <!-- Eye sparkle highlights -->
+    <circle cx="51.5" cy="60.2" r=".8" fill="#fff"/>
+    <circle cx="50.5" cy="61.2" r=".35" fill="#fff" opacity=".7"/>
+    <circle cx="69.5" cy="60.2" r=".8" fill="#fff"/>
+    <circle cx="68.5" cy="61.2" r=".35" fill="#fff" opacity=".7"/>
+
+    <!-- Eye lower liner -->
+    <path d="M 47,61.5 Q 51,63 55,61.5" stroke="#1a0e08" stroke-width=".5" fill="none" stroke-linecap="round"/>
+    <path d="M 65,61.5 Q 69,63 73,61.5" stroke="#1a0e08" stroke-width=".5" fill="none" stroke-linecap="round"/>
+
+    ${isFemale?`<!-- Eye shadow (女子妆) -->
+      <path d="M 47,58.5 Q 51,57.5 55,58.5" stroke="#c0392b" stroke-width="1.3" fill="none" opacity=".4" stroke-linecap="round"/>
+      <path d="M 65,58.5 Q 69,57.5 73,58.5" stroke="#c0392b" stroke-width="1.3" fill="none" opacity=".4" stroke-linecap="round"/>`:''}
+
+    <!-- Nose subtle -->
+    <path d="M 60,63 Q 59.5,68 60,70.5 Q 60.5,68 60,63" fill="#c89070" opacity=".4"/>
+    <path d="M 58.5,71 Q 60,72 61.5,71" stroke="#c08060" stroke-width=".5" fill="none" opacity=".5"/>
+
+    ${isFemale?`<!-- Layered lips -->
+      <path d="M 54,74.5 Q 57,72.5 60,73.5 Q 63,72.5 66,74.5 Q 63,75 60,75 Q 57,75 54,74.5 Z" fill="url(#lips_${id})"/>
+      <path d="M 55,75 Q 57,77.2 60,77.4 Q 63,77.2 65,75 Q 62,77.8 60,78 Q 58,77.8 55,75 Z" fill="#c83828"/>
+      <ellipse cx="60" cy="75.7" rx="1.6" ry=".3" fill="#fff" opacity=".5"/>
+      <!-- Cheek blush -->
+      <ellipse cx="46" cy="67" rx="4.5" ry="3" fill="#e88080" opacity=".4"/>
+      <ellipse cx="74" cy="67" rx="4.5" ry="3" fill="#e88080" opacity=".4"/>
+      <!-- 花钿 / 额黄 -->
+      <g transform="translate(60,48)">
+        <path d="M 0,-3 Q -3,0 0,3 Q 3,0 0,-3 Z" fill="#c0392b"/>
+        <circle cx="0" cy="0" r=".8" fill="#f0c040"/>
+      </g>`
+    :`<!-- Male/eunuch simple lips -->
+      <path d="M 56,74 Q 60,76 64,74" stroke="#8a3a2a" stroke-width="1.3" fill="none" stroke-linecap="round"/>`}
+
+    ${c.beard?`<!-- Mustache + beard -->
+      <path d="M 50,74 Q 56,75.5 60,75 Q 64,75.5 70,74" stroke="#2a1810" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M 52,79 Q 60,89 68,79 Q 64,84 60,85 Q 56,84 52,79 Z" fill="#2a1810"/>
+      <path d="M 54,83 L 54,87 M 60,84 L 60,89 M 66,83 L 66,87" stroke="#1a0e08" stroke-width=".8" stroke-linecap="round"/>`:''}
+
+    <!-- Accessory crown/hairpin -->
     ${ACC[c.acc]?ACC[c.acc]():''}
   </svg>`;
 }
