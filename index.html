@@ -366,6 +366,28 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
   100%{background-color:transparent}
 }
 
+/* ── SKILL BUTTON & TARGET PICKER ── */
+.btn-skill{background:linear-gradient(135deg,#9b59b6,#6c3483)!important;color:#fff!important;border:none;animation:skillGlow 2s ease-in-out infinite}
+@keyframes skillGlow{0%,100%{box-shadow:0 0 8px rgba(155,89,182,.6)}50%{box-shadow:0 0 16px rgba(155,89,182,.95)}}
+.btn-skill.used{background:#3a2840!important;color:#7a5a90!important;cursor:not-allowed;animation:none;opacity:.5}
+.skill-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:8px;margin:10px 0;max-height:50vh;overflow-y:auto;padding:4px}
+.skill-target{background:rgba(155,89,182,.15);border:2px solid rgba(155,89,182,.45);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:.15s}
+.skill-target:hover{background:rgba(155,89,182,.35);transform:translateY(-2px);border-color:#9b59b6}
+.skill-target .stp-name{margin-top:6px;font-weight:600;color:#f5e6c8;font-size:.88em}
+.skill-target .stp-sub{font-size:.72em;opacity:.6;margin-top:2px}
+
+/* Skill result banner */
+.skill-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,rgba(60,30,80,.97),rgba(20,8,30,.97));border:2px solid #9b59b6;border-radius:18px;padding:24px 32px;z-index:999;max-width:340px;width:90vw;text-align:center;box-shadow:0 0 40px rgba(155,89,182,.6),0 12px 40px rgba(0,0,0,.8);animation:skillBannerIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes skillBannerIn{from{transform:translate(-50%,-50%) scale(.3);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.skill-banner-title{color:#bd8eda;font-size:1.3em;font-weight:700;letter-spacing:3px;margin-bottom:10px;font-family:'Noto Serif SC',serif}
+.skill-banner-cards{display:flex;gap:10px;justify-content:center;margin:14px 0}
+.skill-banner-cards .card{width:60px;height:84px}
+.skill-banner-msg{color:#f5e6c8;font-size:.95em;line-height:1.5;margin-bottom:14px}
+
+/* Skill-used badge on player panel */
+.pp-skill{position:absolute;top:4px;right:4px;background:rgba(155,89,182,.85);color:#fff;font-size:.65em;padding:1px 6px;border-radius:8px;font-weight:600}
+.pp-skill.used{background:rgba(80,40,100,.6);text-decoration:line-through;opacity:.5}
+
 @media(max-width:480px){
   .title{font-size:1.9em;letter-spacing:3px}
   .players-grid{grid-template-columns:1fr}
@@ -571,6 +593,17 @@ function getQuote(charId,actType){
   if(!arr||!arr.length)return null;
   return arr[0|Math.random()*arr.length];
 }
+
+// ════════════════════════════════════════════════════════════════
+//  CHARACTER SKILLS (一局一次)
+// ════════════════════════════════════════════════════════════════
+const SKILLS={
+  huangshang:{name:'降旨',emoji:'👑',desc:'强制任一玩家本局弃牌，被指者饮 2 口',needsTarget:true,usableOn:'turn'},
+  huafei:{name:'赏一丈红',emoji:'🌹',desc:'本局获胜时可让任一输家额外饮 3 口',needsTarget:true,usableOn:'cheers'},
+  zhenhuan:{name:'韬光养晦',emoji:'👁',desc:'偷看下一张公共牌（仅自己看到）',needsTarget:false,usableOn:'turn'},
+  supeisheng:{name:'传话',emoji:'🤫',desc:'偷看任一玩家底牌（但对方会被通知）',needsTarget:true,usableOn:'turn'},
+};
+function getSkill(charId){return SKILLS[charId]||null}
 
 // ════════════════════════════════════════════════════════════════
 //  VOICE (Web Speech API)
@@ -948,6 +981,7 @@ function updateCheersUI(){
     <div class="cheers-sub">第 ${s.handNum} 局结算</div>
     ${specialHTML}
     ${winHTML}
+    ${cheersSkillButtonHTML()}
     <div class="cheers-list">${itemsHTML}</div>
     ${progressHTML}
     ${lbHTML}
@@ -956,6 +990,41 @@ function updateCheersUI(){
       :`<div class="cheers-bottom"><div style="flex:1;text-align:center;padding:13px;opacity:.7;color:#f0c040">等待房主开始下一局</div></div>`
     }
   `;
+}
+
+function cheersSkillButtonHTML(){
+  // Show 华妃 「赏一丈红」 if I'm 华妃 + won this round + skill not used
+  if(MP.myCharId!=='huafei'||!CHEERS_STATE)return'';
+  const sk=getSkill('huafei');
+  if(!sk)return'';
+  const myPlayer=G.players?.find(p=>p.id===MP.myId)||CHEERS_STATE.players?.find(p=>p.id===MP.myId);
+  if(myPlayer&&myPlayer.skillUsed)return`<div style="text-align:center;margin-bottom:12px;color:#7a5a90;font-size:.85em">${sk.emoji} ${sk.name}（已用）</div>`;
+  const isWinner=CHEERS_STATE.winners.some(w=>w.id===MP.myId);
+  if(!isWinner)return'';
+  return`<button class="btn btn-skill btn-lg" style="margin-bottom:12px" onclick="openShangSkillPicker()">${sk.emoji} 发动【${sk.name}】</button>`;
+}
+
+function openShangSkillPicker(){
+  // 华妃 picks a loser to drink +3
+  if(!CHEERS_STATE)return;
+  const targets=CHEERS_STATE.drinkItems.filter(d=>d.pid!==MP.myId);
+  if(!targets.length){toast('本局无可选目标');return}
+  const sk=getSkill('huafei');
+  const picker=targets.map(d=>{
+    return`<div class="skill-target" onclick="sendSkill('${escAttr(sk.name)}','${escAttr(d.pid)}')">
+      <div class="avatar avatar-md" style="margin:0 auto">${makeAvatar(d.charId)}</div>
+      <div class="stp-name">${escHTML(d.name)}</div>
+      <div class="stp-sub">当前喝 ${d.sips}口</div>
+    </div>`;
+  }).join('');
+  showModal({
+    title:`${sk.emoji} ${sk.name}`,
+    msg:`${sk.desc}<br><br><b style="color:#bd8eda">选择要赏赐的人：</b><div class="skill-picker">${picker}</div>`,
+    confirmText:'取消',
+    confirmClass:'btn-ghost',
+    cancelText:'',
+    onConfirm:closeModal,
+  });
 }
 
 function hostProceedNext(){
@@ -1666,6 +1735,7 @@ function hostStart(){
 function mkPlayer(id,name,charId,isHost=false){
   return{
     id,name,charId,chips:G.startChips,cards:[],folded:false,allIn:false,bet:0,totalBet:0,chipsStart:G.startChips,drinks:0,disconnected:false,isHost,
+    skillUsed:false, // 角色技能本场只能用一次
     // Battle report stats (cumulative across all hands)
     handsWon:0, allInsCount:0, biggestPotWon:0, biggestLoss:0,
     actionsCount:0, foldsCount:0, timeoutsCount:0,
@@ -1729,9 +1799,102 @@ function onHostReceive(peerId,data){
     showReaction(data);
   }else if(data.type==='cheers'){
     hostHandleCheers(data.from);
+  }else if(data.type==='skill'){
+    hostHandleSkill(peerId,data.skill,data.target);
   }else if(data.type==='nextHand'){
     // ignore - host controls
   }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SKILL HANDLERS (host-side)
+// ════════════════════════════════════════════════════════════════
+function hostHandleSkill(fromPid,skillName,target){
+  const p=G.players.find(x=>x.id===fromPid);
+  if(!p||p.skillUsed)return;
+  const sk=getSkill(p.charId);
+  if(!sk||sk.name!==skillName)return;
+
+  p.skillUsed=true;
+
+  if(skillName==='降旨'){
+    if(p.id!==G.players[G.curIdx]?.id)return; // only on own turn
+    const t=G.players.find(x=>x.id===target);
+    if(!t||t.folded||t.id===fromPid||t.disconnected)return;
+    t.folded=true;
+    t.drinks+=2;
+    // Broadcast skill banner to all
+    broadcastSkillBanner({skill:'降旨',from:p.name,fromCharId:p.charId,target:t.name,targetCharId:t.charId,msg:`皇上降旨：${t.name} 即刻弃牌，饮 2 口！`});
+    G.lastAction={pid:p.id,type:'skill',quote:`降旨：${t.name}！`,ts:Date.now()};
+    // Check if game flow needs to continue
+    const nf=G.players.filter(x=>!x.folded);
+    if(nf.length<=1){finishToShowdown();return}
+    // If target was the active player or in toAct, remove from toAct
+    G.toAct=G.toAct.filter(idx=>G.players[idx].id!==target);
+    broadcastGame();
+  }else if(skillName==='韬光养晦'){
+    if(p.id!==G.players[G.curIdx]?.id)return;
+    if(G.deck.length===0)return;
+    const nextCard=G.deck[G.deck.length-1]; // peek without removing
+    // Send privately to 甄嬛
+    sendPrivate(fromPid,{type:'skillResult',skill:'韬光养晦',card:nextCard});
+    broadcastSkillBanner({skill:'韬光养晦',from:p.name,fromCharId:p.charId,msg:`${p.name} 发动【韬光养晦】，悄悄窥探天机...`,silent:true});
+    broadcastGame();
+  }else if(skillName==='传话'){
+    if(p.id!==G.players[G.curIdx]?.id)return;
+    const t=G.players.find(x=>x.id===target);
+    if(!t||t.folded||t.id===fromPid||!t.cards.length)return;
+    // Send target's cards privately to 苏培盛
+    sendPrivate(fromPid,{type:'skillResult',skill:'传话',targetName:t.name,targetCharId:t.charId,cards:t.cards});
+    // Notify target
+    sendPrivate(target,{type:'skillNotice',skill:'传话',from:p.name,fromCharId:p.charId});
+    broadcastSkillBanner({skill:'传话',from:p.name,fromCharId:p.charId,target:t.name,targetCharId:t.charId,msg:`苏培盛偷看了 ${t.name} 的底牌！`});
+    broadcastGame();
+  }else if(skillName==='赏一丈红'){
+    // Used during cheers — target gets +3 drinks
+    if(!CHEERS_STATE)return;
+    const isWinner=CHEERS_STATE.winners.some(w=>w.id===fromPid);
+    if(!isWinner){p.skillUsed=false;return} // revert if invalid
+    const t=G.players.find(x=>x.id===target);
+    if(!t||t.id===fromPid)return;
+    t.drinks+=3;
+    // Update the drinkItem if exists, or add new
+    const item=CHEERS_STATE.drinkItems.find(d=>d.pid===target);
+    if(item)item.sips+=3;
+    else CHEERS_STATE.drinkItems.push({pid:t.id,name:t.name,charId:t.charId,sips:3});
+    // Update players in CHEERS_STATE
+    CHEERS_STATE.players=G.players.map(serPlayerLB);
+    // Re-broadcast cheers data and banner
+    broadcastSkillBanner({skill:'赏一丈红',from:p.name,fromCharId:p.charId,target:t.name,targetCharId:t.charId,msg:`华妃赏 ${t.name} 一丈红，再喝 3 口！`});
+    // Re-broadcast updated cheers
+    const drinkData={
+      winners:CHEERS_STATE.winners,
+      hand:CHEERS_STATE.hand,
+      specialMsg:CHEERS_STATE.specialMsg,
+      drinkItems:CHEERS_STATE.drinkItems,
+      players:CHEERS_STATE.players,
+      handNum:CHEERS_STATE.handNum,
+    };
+    Object.values(MP.conns).forEach(c=>{try{c.send({type:'drink',...drinkData})}catch(e){}});
+    // Update local
+    updateCheersUI();
+  }
+}
+
+function sendPrivate(pid,msg){
+  if(pid===MP.myId){
+    // Host is the recipient
+    handlePrivateMsg(msg);
+  }else{
+    const conn=MP.conns[pid];
+    if(conn){try{conn.send(msg)}catch(e){}}
+  }
+}
+
+function broadcastSkillBanner(data){
+  const msg={type:'skillBanner',...data};
+  Object.values(MP.conns).forEach(c=>{try{c.send(msg)}catch(e){}});
+  showSkillBanner(data);
 }
 
 function onPeerClose(peerId){
@@ -1837,9 +2000,69 @@ function onClientReceive(data){
     showReaction(data);
   }else if(data.type==='cheersUpdate'){
     if(CHEERS_STATE){CHEERS_STATE.confirmed=new Set(data.confirmed);updateCheersUI()}
+  }else if(data.type==='skillResult'||data.type==='skillNotice'){
+    handlePrivateMsg(data);
+  }else if(data.type==='skillBanner'){
+    showSkillBanner(data);
   }else if(data.type==='error'){
     toast(data.msg);
   }
+}
+
+function handlePrivateMsg(msg){
+  if(msg.type==='skillResult'&&msg.skill==='韬光养晦'){
+    // Show modal with peek card
+    showModal({
+      title:'👁 韬光养晦',
+      msg:`下一张公共牌是：<div style="display:flex;justify-content:center;margin:14px 0">${cardHTML(msg.card,false,true)}</div>谨慎下注，莫露行藏。`,
+      confirmText:'已记下',
+      cancelText:'',
+      onConfirm:closeModal,
+    });
+    sfxTone(1200,.3,.2,'sine',2400);
+  }else if(msg.type==='skillResult'&&msg.skill==='传话'){
+    showModal({
+      title:'🤫 传话',
+      msg:`<b style="color:#bd8eda">${escHTML(msg.targetName)}</b> 的底牌：<div style="display:flex;justify-content:center;gap:10px;margin:14px 0">${msg.cards.map(c=>cardHTML(c,false,true)).join('')}</div>小心被发现哦。`,
+      confirmText:'已记下',
+      cancelText:'',
+      onConfirm:closeModal,
+    });
+    sfxTone(1500,.2,.2,'sine',1800);
+  }else if(msg.type==='skillNotice'&&msg.skill==='传话'){
+    showModal({
+      title:'⚠ 警觉',
+      msg:`<b style="color:#ff6b5b">${escHTML(msg.from)}</b>（苏培盛）刚刚<b>偷看了您的底牌</b>！`,
+      confirmText:'记下了',
+      cancelText:'',
+      onConfirm:closeModal,
+    });
+    sfxBuzz();
+  }
+}
+
+function showSkillBanner(data){
+  const b=document.createElement('div');
+  b.className='skill-banner';
+  const fromAv=data.fromCharId?`<div class="avatar avatar-md" style="display:inline-block;vertical-align:middle">${makeAvatar(data.fromCharId)}</div>`:'';
+  const arrow=data.target?` <span style="color:#bd8eda;font-size:1.2em">→</span> `:'';
+  const targetAv=data.targetCharId?`<div class="avatar avatar-md" style="display:inline-block;vertical-align:middle">${makeAvatar(data.targetCharId)}</div>`:'';
+  b.innerHTML=`
+    <div class="skill-banner-title">${data.skill}</div>
+    <div style="margin:10px 0">${fromAv}${arrow}${targetAv}</div>
+    <div class="skill-banner-msg">${escHTML(data.msg)}</div>
+  `;
+  document.body.appendChild(b);
+  if(!data.silent){
+    sfxTone(800,.3,.25,'sawtooth',400);
+    setTimeout(()=>sfxTone(1200,.4,.3,'triangle',600),100);
+  }
+  setTimeout(()=>{
+    b.style.transition='opacity .4s,transform .4s';
+    b.style.opacity='0';
+    b.style.transform='translate(-50%,-50%) scale(.85)';
+    setTimeout(()=>b.remove(),400);
+  },2600);
 }
 
 function clientSendAction(act,amount){
@@ -2187,6 +2410,7 @@ function makeGameView(){
       drinks:p.drinks,disconnected:p.disconnected,isHost:p.isHost,
       hasCards:p.cards&&p.cards.length>0,
       revealedCards:G.phase==='showdown'&&!p.folded?p.cards:null,
+      skillUsed:!!p.skillUsed,
     })),
     lastAction:G.lastAction||null,
     actionDeadline:G.actionDeadline||0,
@@ -2459,8 +2683,13 @@ function renderGameClient(){
     // Timer bar for active player
     const timerBar=(p.id===activeP?.id&&showTimer)?`<div class="timer-bar" data-deadline="${v.actionDeadline}" style="width:100%"></div>`:'';
 
+    // Skill badge
+    const charSkill=getSkill(p.charId);
+    const skillBadge=charSkill?`<div class="pp-skill${p.skillUsed?' used':''}" title="${escAttr(charSkill.desc)}">${charSkill.emoji}${p.skillUsed?'':' '+charSkill.name}</div>`:'';
+
     grid.innerHTML+=`<div class="${cls}" data-pid="${escAttr(p.id)}" onclick="togglePicker('${escAttr(p.id)}',event)">
       ${bubble}
+      ${skillBadge}
       <div class="pp-top">
         <div class="avatar-wrap"><div class="avatar avatar-md">${makeAvatar(p.charId)}</div>${crown}</div>
         <div class="pp-info">
@@ -2576,6 +2805,63 @@ function renderMyActions(){
   if(me.chips>callAmt){
     btns.innerHTML+=`<button class="btn btn-gold" onclick="toggleRaise(true)">加注 ↑</button>`;
     btns.innerHTML+=`<button class="btn btn-ghost" onclick="confirmAllIn()">ALL IN ⚡</button>`;
+  }
+  // ── Skill button (if my character has one + unused + usable on turn) ──
+  const sk=getSkill(MP.myCharId);
+  if(sk&&sk.usableOn==='turn'){
+    if(me.skillUsed){
+      btns.innerHTML+=`<button class="btn btn-skill used" disabled>${sk.emoji} ${sk.name}已用</button>`;
+    }else{
+      btns.innerHTML+=`<button class="btn btn-skill" onclick="openSkillPicker()">${sk.emoji} ${sk.name}</button>`;
+    }
+  }
+}
+
+function openSkillPicker(){
+  const sk=getSkill(MP.myCharId);
+  if(!sk)return;
+  if(!sk.needsTarget){
+    // Direct send (no target)
+    showModal({
+      title:`${sk.emoji} ${sk.name}`,
+      msg:`${sk.desc}<br><br><b style="color:#bd8eda">一局只能用 1 次</b>，确定发动？`,
+      confirmText:'发动',
+      confirmClass:'btn-skill',
+      onConfirm:()=>sendSkill(sk.name,null),
+    });
+    return;
+  }
+  const v=PUBLIC_VIEW;
+  const me=v.players.find(p=>p.id===MP.myId);
+  // Build target list (exclude self, folded, disconnected)
+  const targets=v.players.filter(p=>p.id!==MP.myId&&!p.folded&&!p.disconnected);
+  if(!targets.length){toast('无可选目标');return}
+  const picker=targets.map(p=>{
+    const c=CHARS.find(x=>x.id===p.charId);
+    return`<div class="skill-target" onclick="sendSkill('${escAttr(sk.name)}','${escAttr(p.id)}')">
+      <div class="avatar avatar-md" style="margin:0 auto">${makeAvatar(p.charId)}</div>
+      <div class="stp-name">${escHTML(p.name)}</div>
+      <div class="stp-sub">${c?escHTML(c.name):''}</div>
+    </div>`;
+  }).join('');
+  showModal({
+    title:`${sk.emoji} ${sk.name}`,
+    msg:`${sk.desc}<br><br><b style="color:#bd8eda">选择目标：</b><div class="skill-picker">${picker}</div>`,
+    confirmText:'取消',
+    confirmClass:'btn-ghost',
+    cancelText:'',
+    onConfirm:closeModal,
+  });
+}
+
+function sendSkill(skillName,target){
+  closeModal();
+  sfxClick();
+  const msg={type:'skill',skill:skillName,target};
+  if(MP.isHost){
+    hostHandleSkill(MP.myId,skillName,target);
+  }else if(MP.conns.host){
+    try{MP.conns.host.send(msg)}catch(e){}
   }
 }
 
