@@ -388,6 +388,20 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
 .pp-skill{position:absolute;top:4px;right:4px;background:rgba(155,89,182,.85);color:#fff;font-size:.65em;padding:1px 6px;border-radius:8px;font-weight:600}
 .pp-skill.used{background:rgba(80,40,100,.6);text-decoration:line-through;opacity:.5}
 
+/* ── EVENT CARDS ── */
+.event-card{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#3a2010,#1a0808);border:3px solid;border-radius:20px;padding:28px 32px;z-index:999;text-align:center;width:340px;max-width:90vw;box-shadow:0 0 60px rgba(240,192,64,.4),0 16px 50px rgba(0,0,0,.8);animation:eventIn .7s cubic-bezier(.34,1.56,.64,1) forwards,eventOut .5s ease-in 3.2s forwards}
+@keyframes eventIn{0%{transform:translate(-50%,-50%) scale(0) rotate(-180deg);opacity:0}50%{transform:translate(-50%,-50%) scale(1.15) rotate(5deg)}100%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}}
+@keyframes eventOut{to{transform:translate(-50%,-50%) scale(.8) translateY(-30px);opacity:0}}
+.event-pre{font-size:.85em;color:#bd8eda;letter-spacing:6px;margin-bottom:8px}
+.event-emoji{font-size:4em;margin:8px 0}
+.event-name{font-size:2em;font-weight:900;letter-spacing:8px;margin-bottom:10px;font-family:'Noto Serif SC',serif}
+.event-desc{color:#f5e6c8;font-size:.95em;line-height:1.6;margin-bottom:6px}
+.event-frame{position:absolute;inset:6px;border:1px solid;border-radius:14px;pointer-events:none;opacity:.4}
+
+/* Active event badge in header */
+.event-badge{display:inline-block;background:linear-gradient(135deg,#9b59b6,#6c3483);color:#fff;padding:3px 10px;border-radius:10px;font-size:.78em;margin-left:6px;letter-spacing:1px;font-weight:600;animation:eventBadgePulse 1.6s ease-in-out infinite}
+@keyframes eventBadgePulse{0%,100%{box-shadow:0 0 4px rgba(155,89,182,.6)}50%{box-shadow:0 0 12px rgba(155,89,182,1)}}
+
 @media(max-width:480px){
   .title{font-size:1.9em;letter-spacing:3px}
   .players-grid{grid-template-columns:1fr}
@@ -606,6 +620,19 @@ const SKILLS={
 function getSkill(charId){return SKILLS[charId]||null}
 
 // ════════════════════════════════════════════════════════════════
+//  EVENT CARDS (宫斗事件牌 — 每 3 局抽 1 张)
+// ════════════════════════════════════════════════════════════════
+const EVENT_CARDS=[
+  {id:'royal',name:'金枝玉叶',emoji:'👑',color:'#f0c040',desc:'本局所有输家额外饮 5 口！',timing:'end'},
+  {id:'feast',name:'满汉全席',emoji:'🍱',color:'#27ae60',desc:'恭喜！所有玩家立即获 +30 筹码',timing:'start'},
+  {id:'relocate',name:'移宫',emoji:'🔄',color:'#9b59b6',desc:'所有玩家与左邻互换底牌（已发完）',timing:'start'},
+  {id:'bestow',name:'赐酒一杯',emoji:'🍷',color:'#e74c3c',desc:'随机一人立即饮 3 口',timing:'start'},
+  {id:'rain',name:'天降甘霖',emoji:'☔',color:'#3498db',desc:'底池起手 +40 筹码（公帑入池）',timing:'start'},
+  {id:'silence',name:'禁声令',emoji:'🤐',color:'#7f8c8d',desc:'本局禁台词与表情贴！违者罚酒（视觉）',timing:'passive'},
+];
+const EVENT_INTERVAL=3; // 每 N 局触发一次
+
+// ════════════════════════════════════════════════════════════════
 //  VOICE (Web Speech API)
 // ════════════════════════════════════════════════════════════════
 let VOICE_ENABLED=localStorage.getItem('voice')!=='0';
@@ -791,6 +818,11 @@ let pickerOpenForPid=null;
 
 function togglePicker(pid,event){
   if(event)event.stopPropagation();
+  // Block during 禁声令 event
+  if(PUBLIC_VIEW&&PUBLIC_VIEW.eventActive&&PUBLIC_VIEW.eventActive.id==='silence'){
+    toast('🤐 本局禁声令，禁止表情贴');
+    return;
+  }
   if(pickerOpenForPid===pid){closePicker();return}
   closePicker();
   const panel=document.querySelector(`.pp[data-pid="${CSS.escape(pid)}"]`);
@@ -1897,6 +1929,36 @@ function broadcastSkillBanner(data){
   showSkillBanner(data);
 }
 
+// ════════════════════════════════════════════════════════════════
+//  EVENT CARD EFFECTS (host-side)
+// ════════════════════════════════════════════════════════════════
+function applyEventPreHand(event){
+  if(!event)return;
+  if(event.id==='feast'){
+    G.players.forEach(p=>{if(!p.disconnected&&p.chips>0)p.chips+=30;p.chipsStart=p.chips});
+  }else if(event.id==='rain'){
+    G.pot+=40;
+  }else if(event.id==='bestow'){
+    const alive=G.players.filter(p=>!p.disconnected&&!p.folded&&p.chips>0);
+    if(alive.length){
+      const victim=alive[0|Math.random()*alive.length];
+      victim.drinks+=3;
+      G.eventVictimName=victim.name;
+      G.eventVictimCharId=victim.charId;
+    }
+  }else if(event.id==='relocate'){
+    // Cyclic swap: each player's cards go to next active player
+    const active=G.players.filter(p=>p.chips>0&&!p.disconnected&&p.cards.length);
+    if(active.length>=2){
+      const firstCards=active[0].cards;
+      for(let i=0;i<active.length-1;i++)active[i].cards=active[i+1].cards;
+      active[active.length-1].cards=firstCards;
+    }
+  }
+  // 'royal' applies at end-of-hand (in hostShowDrink)
+  // 'silence' is passive — client checks state.eventActive.id
+}
+
 function onPeerClose(peerId){
   const p=G.players.find(x=>x.id===peerId);
   if(!p)return;
@@ -2114,6 +2176,8 @@ function hostStartGame(){
 // ════════════════════════════════════════════════════════════════
 function hostDealHand(){
   closeCheersOverlay();
+  // Clear last hand's event
+  G.eventActive=null;
   // Buy back eliminated players? For now they stay out
   const alive=G.players.filter(p=>p.chips>0&&!p.disconnected);
   if(alive.length<2){hostEndGame();return}
@@ -2121,6 +2185,15 @@ function hostDealHand(){
   G.handNum++;
   G.players.forEach(p=>{p.cards=[];p.folded=p.chips===0||p.disconnected;p.allIn=false;p.bet=0;p.totalBet=0;p.chipsStart=p.chips});
   G.deck=shuffle(mkDeck());G.com=[];G.pot=0;G.curBet=0;G.phase='preflop';
+
+  // ── EVENT CARD DRAW (every 3 hands, starting from hand 3) ──
+  G.handsSinceEvent=(G.handsSinceEvent||0)+1;
+  let drawnEvent=null;
+  if(G.handsSinceEvent>=EVENT_INTERVAL&&G.handNum>=3){
+    G.handsSinceEvent=0;
+    drawnEvent=EVENT_CARDS[0|Math.random()*EVENT_CARDS.length];
+    G.eventActive=drawnEvent;
+  }
 
   // Advance dealer
   let d=G.dealer;
@@ -2137,6 +2210,9 @@ function hostDealHand(){
       p.folded=false;
     }
   });
+
+  // Apply pre-hand event effects
+  if(drawnEvent)applyEventPreHand(drawnEvent);
 
   // Blinds
   const sbI=nextFrom(G.dealer,1);
@@ -2352,6 +2428,18 @@ function hostShowDrink(result){
     drinkItems.push({pid:p.id,name:p.name,charId:p.charId,sips});
   });
 
+  // ── 金枝玉叶 event: all non-winners +5 drinks ──
+  if(G.eventActive&&G.eventActive.id==='royal'){
+    G.players.forEach(p=>{
+      if(winIds.has(p.id)||p.disconnected)return;
+      p.drinks+=5;
+      const item=drinkItems.find(d=>d.pid===p.id);
+      if(item)item.sips+=5;
+      else drinkItems.push({pid:p.id,name:p.name,charId:p.charId,sips:5});
+    });
+    specialMsg=(specialMsg?specialMsg+'｜':'')+'👑 金枝玉叶：输家额外饮 5 口！';
+  }
+
   const drinkData={
     winners:result.winners.map(p=>({id:p.id,name:p.name,charId:p.charId,gain:p.chips-p.chipsStart})),
     hand:result.hand,
@@ -2415,6 +2503,9 @@ function makeGameView(){
     lastAction:G.lastAction||null,
     actionDeadline:G.actionDeadline||0,
     lightning:!!G.lightning,
+    eventActive:G.eventActive||null,
+    eventVictimName:G.eventVictimName||null,
+    eventVictimCharId:G.eventVictimCharId||null,
   };
 }
 
@@ -2515,6 +2606,10 @@ function triggerMyTurnAlert(){
 function detectChanges(prev,curr){
   // Always check turn transition
   checkMyTurnTransition(curr);
+  // ── New event card drawn ──
+  if(curr.eventActive&&(!prev||!prev.eventId||prev.eventId!==curr.eventActive.id||prev.handNum!==curr.handNum)){
+    showEventCard(curr.eventActive,curr.eventVictimName,curr.eventVictimCharId);
+  }
   if(!prev)return;
   // ── new community card(s) ──
   if(curr.com.length>prev.comLen){
@@ -2571,6 +2666,31 @@ function detectChanges(prev,curr){
   }
 }
 
+function showEventCard(event,victimName,victimCharId){
+  const c=document.createElement('div');
+  c.className='event-card';
+  c.style.borderColor=event.color;
+  c.style.boxShadow=`0 0 60px ${event.color}66,0 16px 50px rgba(0,0,0,.8)`;
+  let extraInfo='';
+  if(event.id==='bestow'&&victimName){
+    extraInfo=`<div style="margin-top:10px;color:#ff6b5b">被点：<b>${escHTML(victimName)}</b> 立即喝 3 口！</div>`;
+  }
+  c.innerHTML=`
+    <div class="event-frame" style="border-color:${event.color}"></div>
+    <div class="event-pre">— 宫 斗 事 件 —</div>
+    <div class="event-emoji">${event.emoji}</div>
+    <div class="event-name" style="color:${event.color}">${event.name}</div>
+    <div class="event-desc">${event.desc}</div>
+    ${extraInfo}
+  `;
+  document.body.appendChild(c);
+  // Sound: dramatic chord
+  sfxTone(440,.5,.3,'triangle',330);
+  setTimeout(()=>sfxTone(660,.5,.25,'sine',500),80);
+  setTimeout(()=>sfxTone(880,.4,.2,'triangle',700),160);
+  setTimeout(()=>c.remove(),3800);
+}
+
 function showAllInBanner(){
   // Banner
   const b=document.createElement('div');
@@ -2593,7 +2713,8 @@ function renderGameClient(){
   // Trigger sounds/effects from diff (before re-render)
   detectChanges(prev,v);
 
-  document.getElementById('g-hand').innerHTML=`第 ${v.handNum} 局${v.lightning?' <span style="background:rgba(231,76,60,.3);color:#ff6b5b;padding:1px 6px;border-radius:8px;font-size:.8em;margin-left:3px;letter-spacing:1px">⚡闪电</span>':''}`;
+  const eventBadgeHTML=v.eventActive?` <span class="event-badge" title="${escAttr(v.eventActive.desc)}">${v.eventActive.emoji} ${v.eventActive.name}</span>`:'';
+  document.getElementById('g-hand').innerHTML=`第 ${v.handNum} 局${v.lightning?' <span style="background:rgba(231,76,60,.3);color:#ff6b5b;padding:1px 6px;border-radius:8px;font-size:.8em;margin-left:3px;letter-spacing:1px">⚡闪电</span>':''}${eventBadgeHTML}`;
   document.getElementById('g-pot').textContent=v.pot;
   document.getElementById('g-phase').textContent=PNAMES[v.phase]||'';
 
@@ -2675,8 +2796,9 @@ function renderGameClient(){
     const st=stTxt?`<div class="pp-status${stCls}">${stTxt}</div>`:'';
     const dr=p.drinks?`<div class="pp-drinks">🍺 已喝 ${p.drinks} 口</div>`:'';
 
-    // Speech bubble if this player just acted (within 5s window)
-    const showBubble=v.lastAction&&v.lastAction.pid===p.id&&v.lastAction.quote&&(Date.now()-v.lastAction.ts<5000);
+    // Speech bubble if this player just acted (within 5s window) — disabled under 禁声令
+    const isSilent=v.eventActive&&v.eventActive.id==='silence';
+    const showBubble=!isSilent&&v.lastAction&&v.lastAction.pid===p.id&&v.lastAction.quote&&(Date.now()-v.lastAction.ts<5000);
     const bubble=showBubble?`<div class="speech-bubble">${escHTML(v.lastAction.quote)}</div>`:'';
     // Crown
     const crown=p.id===crownPid?`<div class="crown">👑</div>`:'';
@@ -2708,8 +2830,9 @@ function renderGameClient(){
   // Animate timer bars
   startTimerBarAnimation();
 
-  // Speak quote once per new action
-  if(v.lastAction&&v.lastAction.quote&&v.lastAction.ts!==LAST_SPOKEN_TS){
+  // Speak quote once per new action (silenced under 禁声令)
+  const silenced=v.eventActive&&v.eventActive.id==='silence';
+  if(!silenced&&v.lastAction&&v.lastAction.quote&&v.lastAction.ts!==LAST_SPOKEN_TS){
     LAST_SPOKEN_TS=v.lastAction.ts;
     const actor=v.players.find(p=>p.id===v.lastAction.pid);
     if(actor)speakQuote(v.lastAction.quote,actor.charId);
@@ -2725,6 +2848,7 @@ function renderGameClient(){
     pot:v.pot,
     handNum:v.handNum,
     actTs:v.lastAction?v.lastAction.ts:0,
+    eventId:v.eventActive?v.eventActive.id:null,
   };
 }
 
