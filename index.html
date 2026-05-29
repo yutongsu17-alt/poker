@@ -419,6 +419,10 @@ input:focus{outline:none;border-color:#f0c040;box-shadow:0 0 0 2px rgba(240,192,
           <label style="opacity:.75;font-size:.85em">大盲</label>
           <input type="number" id="s-bb" value="10" min="2" max="50" step="2" style="width:70px">
         </div>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:.88em;color:#f5e6c8">
+          <input type="checkbox" id="s-lightning" style="width:auto;accent-color:#f0c040">
+          ⚡ 闪电局模式（跳过翻牌/转牌下注，一手约 90 秒，更适合喝酒）
+        </label>
       </div>
       <button class="btn btn-gold btn-lg" onclick="hostStart()">🎴 创建房间</button>
     </div>
@@ -822,6 +826,8 @@ function startActionTimer(){
     if(!p||p.folded||p.allIn)return;
     p.folded=true;
     p.drinks+=2; // 罚 2 口
+    p.timeoutsCount=(p.timeoutsCount||0)+1;
+    p.foldsCount=(p.foldsCount||0)+1;
     G.lastAction={pid:p.id,type:'fold',quote:`超时罚 2 口！`,ts:Date.now()};
     sfxBuzz();
     toast(`${p.name} 超时自动弃牌 + 罚 2 口`);
@@ -1627,6 +1633,7 @@ function hostStart(){
   G.startChips=Math.max(20,parseInt(document.getElementById('s-chips').value)||100);
   G.bb=Math.max(2,parseInt(document.getElementById('s-bb').value)||10);
   G.sb=Math.max(1,Math.floor(G.bb/2));
+  G.lightning=!!document.getElementById('s-lightning')?.checked;
 
   msg('正在创建房间...');
   MP.peer=new Peer({debug:1});
@@ -1657,7 +1664,14 @@ function hostStart(){
 }
 
 function mkPlayer(id,name,charId,isHost=false){
-  return{id,name,charId,chips:G.startChips,cards:[],folded:false,allIn:false,bet:0,totalBet:0,chipsStart:G.startChips,drinks:0,disconnected:false,isHost};
+  return{
+    id,name,charId,chips:G.startChips,cards:[],folded:false,allIn:false,bet:0,totalBet:0,chipsStart:G.startChips,drinks:0,disconnected:false,isHost,
+    // Battle report stats (cumulative across all hands)
+    handsWon:0, allInsCount:0, biggestPotWon:0, biggestLoss:0,
+    actionsCount:0, foldsCount:0, timeoutsCount:0,
+    bestHandRank:-1, bestHandName:'',
+    winStreak:0, maxStreak:0,
+  };
 }
 
 function showShareUI(roomId){
@@ -1944,6 +1958,10 @@ function buildToAct(firstI){
 function handleAction(act,amount){
   clearActionTimer(); // 玩家及时行动，清掉计时器
   const p=G.players[G.curIdx];
+  // Stats tracking
+  p.actionsCount=(p.actionsCount||0)+1;
+  if(act==='fold')p.foldsCount=(p.foldsCount||0)+1;
+  if(act==='allin')p.allInsCount=(p.allInsCount||0)+1;
   if(act==='fold'){p.folded=true}
   else if(act==='check'){if(G.curBet!==p.bet)return}
   else if(act==='call'){
@@ -1997,6 +2015,15 @@ function nextPhase(){
   else if(G.phase==='river'){return finishToShowdown()}
 
   const canAct=nf.filter(p=>!p.allIn&&p.chips>0&&!p.disconnected);
+
+  // ⚡ LIGHTNING MODE: skip betting on flop & turn, auto-advance after animation
+  if(G.lightning&&(G.phase==='flop'||G.phase==='turn')){
+    broadcastGame();
+    const delay=wasFlop?1400:900;
+    setTimeout(()=>nextPhase(),delay);
+    return;
+  }
+
   // Single broadcast carries both new cards AND new actor — avoids re-render killing animation
   if(canAct.length<2){
     broadcastGame();
@@ -2071,6 +2098,26 @@ function hostShowDrink(result){
   else if(result.hand&&result.hand.hr===7)specialMsg='💥 四条！输家各多喝 2 口！';
   const extra=(result.hand&&(result.hand.hr===8||result.hand.hr===7))?2:0;
 
+  // === STATS TRACKING ===
+  G.players.forEach(p=>{
+    const gain=p.chips-p.chipsStart;
+    const loss=p.chipsStart-p.chips;
+    if(winIds.has(p.id)){
+      p.handsWon=(p.handsWon||0)+1;
+      p.winStreak=(p.winStreak||0)+1;
+      if(p.winStreak>(p.maxStreak||0))p.maxStreak=p.winStreak;
+      if(gain>(p.biggestPotWon||0))p.biggestPotWon=gain;
+      // Track best hand achieved
+      if(result.hand&&result.hand.hr>(p.bestHandRank!=null?p.bestHandRank:-1)){
+        p.bestHandRank=result.hand.hr;
+        p.bestHandName=result.hand.name;
+      }
+    }else{
+      p.winStreak=0;
+      if(loss>(p.biggestLoss||0))p.biggestLoss=loss;
+    }
+  });
+
   G.players.forEach(p=>{
     if(allDrink){const s=3;p.drinks+=s;drinkItems.push({pid:p.id,name:p.name,charId:p.charId,sips:s});return}
     if(winIds.has(p.id))return;
@@ -2096,7 +2143,15 @@ function hostShowDrink(result){
   showCheersOverlay(drinkData);
 }
 
-function serPlayerLB(p){return{id:p.id,name:p.name,charId:p.charId,chips:p.chips,drinks:p.drinks}}
+function serPlayerLB(p){return{
+  id:p.id,name:p.name,charId:p.charId,chips:p.chips,drinks:p.drinks,
+  handsWon:p.handsWon||0,allInsCount:p.allInsCount||0,
+  biggestPotWon:p.biggestPotWon||0,biggestLoss:p.biggestLoss||0,
+  actionsCount:p.actionsCount||0,foldsCount:p.foldsCount||0,timeoutsCount:p.timeoutsCount||0,
+  bestHandRank:p.bestHandRank!=null?p.bestHandRank:-1,bestHandName:p.bestHandName||'',
+  maxStreak:p.maxStreak||0,
+  chipsStart:G.startChips,
+}}
 
 function hostNextHand(){
   // Continue
@@ -2135,6 +2190,7 @@ function makeGameView(){
     })),
     lastAction:G.lastAction||null,
     actionDeadline:G.actionDeadline||0,
+    lightning:!!G.lightning,
   };
 }
 
@@ -2313,7 +2369,7 @@ function renderGameClient(){
   // Trigger sounds/effects from diff (before re-render)
   detectChanges(prev,v);
 
-  document.getElementById('g-hand').textContent=`第 ${v.handNum} 局`;
+  document.getElementById('g-hand').innerHTML=`第 ${v.handNum} 局${v.lightning?' <span style="background:rgba(231,76,60,.3);color:#ff6b5b;padding:1px 6px;border-radius:8px;font-size:.8em;margin-left:3px;letter-spacing:1px">⚡闪电</span>':''}`;
   document.getElementById('g-pot').textContent=v.pot;
   document.getElementById('g-phase').textContent=PNAMES[v.phase]||'';
 
@@ -2662,19 +2718,125 @@ function showDrinkUI(data){
   showScreen('screen-drink');
 }
 
+function computeAwards(players){
+  // Returns array of {emoji, title, pid, desc}
+  const awards=[];
+  const alive=players.filter(p=>!p.disconnected);
+  if(!alive.length)return awards;
+  // 一姐/一爷 (most chips)
+  const topChips=alive.reduce((a,b)=>b.chips>a.chips?b:a);
+  if(topChips.chips>0){
+    const isF=!CHARS.find(c=>c.id===topChips.charId)?.isM&&!CHARS.find(c=>c.id===topChips.charId)?.isE;
+    awards.push({emoji:'🥇',title:isF?'今晚一姐':'今晚一爷',pid:topChips.id,desc:`筹码 ${topChips.chips}`,color:'#f0c040'});
+  }
+  // 醉妃 (most drinks)
+  const topDrunk=alive.reduce((a,b)=>(b.drinks||0)>(a.drinks||0)?b:a,alive[0]);
+  if((topDrunk.drinks||0)>0){
+    awards.push({emoji:'🍷',title:'今夜醉妃',pid:topDrunk.id,desc:`累计喝 ${topDrunk.drinks} 口`,color:'#ff6b5b'});
+  }
+  // 最莽 (most all-ins)
+  const topMang=alive.reduce((a,b)=>(b.allInsCount||0)>(a.allInsCount||0)?b:a,alive[0]);
+  if((topMang.allInsCount||0)>0){
+    awards.push({emoji:'🎲',title:'最莽之妃',pid:topMang.id,desc:`ALL IN ${topMang.allInsCount} 次`,color:'#e74c3c'});
+  }
+  // 翻车王 (biggest single hand loss)
+  const topLoss=alive.reduce((a,b)=>(b.biggestLoss||0)>(a.biggestLoss||0)?b:a,alive[0]);
+  if((topLoss.biggestLoss||0)>=10){
+    awards.push({emoji:'💀',title:'翻车王',pid:topLoss.id,desc:`单局最大失血 ${topLoss.biggestLoss} 筹码`,color:'#9b59b6'});
+  }
+  // 戏精 (most actions)
+  const topActor=alive.reduce((a,b)=>(b.actionsCount||0)>(a.actionsCount||0)?b:a,alive[0]);
+  if((topActor.actionsCount||0)>5){
+    awards.push({emoji:'😏',title:'最戏精',pid:topActor.id,desc:`共行动 ${topActor.actionsCount} 次`,color:'#3498db'});
+  }
+  // 万岁三呼 (most hands won)
+  const topWins=alive.reduce((a,b)=>(b.handsWon||0)>(a.handsWon||0)?b:a,alive[0]);
+  if((topWins.handsWon||0)>0){
+    awards.push({emoji:'👑',title:'圣眷正浓',pid:topWins.id,desc:`赢 ${topWins.handsWon} 局${topWins.maxStreak>1?` · 最长连胜 ${topWins.maxStreak}`:''}`,color:'#f0c040'});
+  }
+  // 慢羊羊 (timeouts)
+  const slowest=alive.reduce((a,b)=>(b.timeoutsCount||0)>(a.timeoutsCount||0)?b:a,alive[0]);
+  if((slowest.timeoutsCount||0)>0){
+    awards.push({emoji:'🐢',title:'磨蹭娘娘',pid:slowest.id,desc:`超时弃牌 ${slowest.timeoutsCount} 次`,color:'#7f8c8d'});
+  }
+  // 一战封神 (biggest single pot won)
+  const topPot=alive.reduce((a,b)=>(b.biggestPotWon||0)>(a.biggestPotWon||0)?b:a,alive[0]);
+  if((topPot.biggestPotWon||0)>=30){
+    awards.push({emoji:'🔥',title:'一战封神',pid:topPot.id,desc:`单局最大斩获 ${topPot.biggestPotWon} 筹码`,color:'#e67e22'});
+  }
+  // 仙人指路 (best hand)
+  const handNames=['','一对','两对','三条','顺子','同花','葫芦','四条','同花顺','皇家同花顺'];
+  const topHand=alive.reduce((a,b)=>(b.bestHandRank||-1)>(a.bestHandRank||-1)?b:a,alive[0]);
+  if((topHand.bestHandRank||-1)>=4){
+    const hname=handNames[topHand.bestHandRank]||topHand.bestHandName;
+    awards.push({emoji:topHand.bestHandRank>=8?'🌟':'🌹',title:'手气最佳',pid:topHand.id,desc:`亮出${hname}`,color:'#9b59b6'});
+  }
+  // 最稳 (least actions but stayed alive with chips)
+  const careful=alive.filter(p=>(p.actionsCount||0)<=10&&p.chips>=topChips.chips*0.5);
+  if(careful.length){
+    const safest=careful.reduce((a,b)=>(b.foldsCount||0)>(a.foldsCount||0)?b:a,careful[0]);
+    if((safest.foldsCount||0)>=3&&safest.id!==topWins.id&&safest.id!==topActor.id){
+      awards.push({emoji:'🦉',title:'稳如端妃',pid:safest.id,desc:`弃牌 ${safest.foldsCount} 次，保命第一`,color:'#5dade2'});
+    }
+  }
+  return awards;
+}
+
 function showFinal(players){
   const sorted=[...players].sort((a,b)=>b.chips-a.chips);
-  document.getElementById('f-lb').innerHTML=`<div style="margin-bottom:16px;font-size:1.05em;opacity:.75">— 最终结果 —</div>`+sorted.map((p,i)=>{
-    const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':'　';
+  const awards=computeAwards(players);
+  const lookupPlayer=(pid)=>players.find(p=>p.id===pid);
+
+  const handsTotal=Math.max(1,G.handNum||1);
+  const totalDrinks=players.reduce((s,p)=>s+(p.drinks||0),0);
+  const totalAllIns=players.reduce((s,p)=>s+(p.allInsCount||0),0);
+
+  let html=`
+    <div style="margin-bottom:8px;font-size:1.05em;opacity:.85;color:#f0c040;letter-spacing:3px">— 今 夜 战 报 —</div>
+    <div style="opacity:.65;font-size:.85em;margin-bottom:18px">共 ${handsTotal} 局 · 全桌共喝 ${totalDrinks} 口 · ALL IN ${totalAllIns} 次</div>`;
+
+  // Awards section
+  if(awards.length){
+    html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:18px">`;
+    awards.forEach(a=>{
+      const p=lookupPlayer(a.pid);
+      if(!p)return;
+      html+=`<div style="background:linear-gradient(135deg,rgba(${hexToRgb(a.color)},.18),rgba(0,0,0,.3));border:1px solid ${a.color}55;border-radius:11px;padding:10px;display:flex;align-items:center;gap:10px;text-align:left">
+        <div style="font-size:2em;line-height:1;flex-shrink:0">${a.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="color:${a.color};font-weight:700;font-size:.95em;letter-spacing:1px;margin-bottom:2px">${a.title}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <div class="avatar avatar-sm" style="width:24px;height:24px">${makeAvatar(p.charId)}</div>
+            <div style="font-weight:600;font-size:.92em;color:#f5e6c8">${p.name}</div>
+          </div>
+          <div style="font-size:.78em;opacity:.7">${a.desc}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Final standings
+  html+=`<div style="margin-bottom:10px;font-size:.9em;opacity:.7;letter-spacing:2px;color:#f0c040">— 终 局 排 名 —</div>`;
+  html+=sorted.map((p,i)=>{
+    const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
     return`<div class="lb-row" style="padding:7px 0;font-size:.95em">
       <div class="lb-rank">${m}</div>
       <div class="avatar avatar-sm">${makeAvatar(p.charId)}</div>
-      <div class="lb-n">${p.name}</div>
+      <div class="lb-n">${p.name}${p.chips===0?' <span style="color:#ff6b5b;font-size:.78em">出局</span>':''}</div>
       <div class="lb-c">💰${p.chips}</div>
       <div class="lb-d">🍺${p.drinks}口</div>
     </div>`;
   }).join('');
+  document.getElementById('f-lb').innerHTML=html;
   showScreen('screen-final');
+  // Victory chime
+  setTimeout(()=>sfxWin(),300);
+}
+
+function hexToRgb(hex){
+  const c=parseInt(hex.slice(1),16);
+  return `${(c>>16)&255},${(c>>8)&255},${c&255}`;
 }
 
 // ════════════════════════════════════════════════════════════════
